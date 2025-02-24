@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enter Scores</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            background-color: #f4f4f4; 
+            margin: 0; 
+            padding: 0; 
+        }
+        
+        .container { 
+            width: 80%; 
+            max-width: 800px; 
+            margin: 40px auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        h2 { 
+            color: #004080; /* School blue */
+            text-align: center; 
+        }
+
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px; 
+        }
+
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 12px; 
+            text-align: center; 
+        }
+
+        th { 
+            background-color: #004080; 
+            color: white; 
+        }
+
+        td { 
+            background-color: #f9f9f9; 
+        }
+
+        input { 
+            width: 100%; 
+            padding: 8px; 
+            text-align: center; 
+            border: 1px solid #ccc; 
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        input:focus { 
+            border-color: #004080; 
+            outline: none; 
+        }
+
+        button { 
+            background-color: #004080; 
+            color: white; 
+            padding: 12px; 
+            border: none; 
+            cursor: pointer; 
+            width: 100%; 
+            border-radius: 5px;
+            font-size: 16px;
+            transition: background 0.3s ease-in-out;
+        }
+
+        button:hover { 
+            background-color: #002D5E; 
+        }
+
+        .back-link { 
+            display: block; 
+            margin-top: 15px; 
+            text-decoration: none; 
+            color: #004080; 
+            font-weight: bold; 
+            transition: color 0.3s;
+        }
+
+        .back-link:hover { 
+            color: #FFBF00; /* School yellow */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Enter Scores for {{ student.name }}</h2>
+        <form method="post">
+            <table>
+                <tr>
+                    <th>Subject</th>
+                    <th>1st Test (20)</th>
+                    <th>2nd Test (20)</th>
+                    <th>Class Assessment (5)</th>
+                    <th>Home Assessment (5)</th>
+                    <th>Exam (50)</th>
+                </tr>
+                {% for subject in subjects %}
+                <tr>
+                    <td><strong>{{ subject }}</strong></td>
+                    <td><input type="number" name="{{ subject }}_first_test" value="{{ scores.get(subject, {}).first_test or '' }}" min="0" max="20"></td>
+                    <td><input type="number" name="{{ subject }}_second_test" value="{{ scores.get(subject, {}).second_test or '' }}" min="0" max="20"></td>
+                    <td><input type="number" name="{{ subject }}_class_assessment" value="{{ scores.get(subject, {}).class_assessment or '' }}" min="0" max="5"></td>
+                    <td><input type="number" name="{{ subject }}_home_assessment" value="{{ scores.get(subject, {}).home_assessment or '' }}" min="0" max="5"></td>
+                    <td><input type="number" name="{{ subject }}_exam" value="{{ scores.get(subject, {}).exam or '' }}" min="0" max="50"></td>
+                </tr>
+                {% endfor %}
+            </table>
+            <br>
+            <button type="submit">Save Scores</button>
+        </form>
+        <a href="{{ url_for('index') }}" class="back-link">← Back to Student List</a>
+    </div>
+</body>
+</html>

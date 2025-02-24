@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Report Card</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 5px;
+            padding: 10px;
+            background: #fff;
+        }
+        .report-container {
+            width: 100%;
+            margin: auto;
+            padding: 10px;
+            background: white;
+        }
+        .school-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .school-header img {
+            width: 80px;
+            height: auto;
+        }
+        .school-header h1 {
+            margin: 0;
+            color: #ad0000;
+            text-align: center;
+            flex-grow: 1;
+            font-size: 18px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 5px;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 3px;
+            text-align: center;
+            font-size: 10px;
+        }
+        th {
+            background-color: #004080;
+            color: white;
+        }
+        .student-info, .student-details {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        .comment-section {
+            margin-top: 10px;
+            font-size: 12px;
+        }
+        .comment-section p {
+            margin: 2px 0;
+        }
+        .signature {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        .signature div {
+            width: 45%;
+            text-align: left;
+        }
+        .signature-line {
+            display: block;
+            width: 100%;
+            border-bottom: 1px solid black;
+            margin-top: 5px;
+        }
+        @media print {
+            .download-btn {
+                display: none;
+            }
+            body {
+                margin: 0;
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="report-container">
+        <div class="school-header">
+            <img src="/static/logo.png" alt="School Logo">
+            <h1>GLORIOUS STARLIGHT SCHOOLS</h1>
+        </div>
+        <h2 style="text-align: center; font-size: 14px;">(Montessori and Academy)</h2>
+        <p style="text-align: center; font-size: 12px;">Address: __________ | Email: starlightsite24@gmail.com | No: __________</p>
+        <h2 style="text-align: center; font-size: 14px;">ACADEMY SCHOOL TERMINAL REPORT</h2>
+        
+        <div class="student-info">
+            <strong>Name:</strong> ayo
+            <strong>Class:</strong> primary 5
+            <strong>Attendance:</strong> 110 days of 110 days
+        </div>
+        <div class="student-details">
+            <p><strong>Age:</strong> 10</p>
+            <p><strong>Gender:</strong> Male</p>
+        </div>
+        
+        <table>
+            <tr>
+                <th>Subject</th>
+                <th>1st Test (20)</th>
+                <th>2nd Test (20)</th>
+                <th>Class Assessment (5)</th>
+                <th>Home Assessment (5)</th>
+                <th>Exam (50)</th>
+                <th>Total</th>
+                <th>Grade</th>
+            </tr>
+            
+            <tr>
+                <td>Mathematics</td>
+                <td>20</td>
+                <td>20</td>
+                <td>5</td>
+                <td>5</td>
+                <td>50</td>
+                <td>100</td>
+                <td>A</td>
+            </tr>
+            
+            <tr>
+                <td>English</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>F</td>
+            </tr>
+            
+            <tr>
+                <td>Science</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>F</td>
+            </tr>
+            
+            <tr>
+                <td>Social Studies</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>F</td>
+            </tr>
+            
+            <tr>
+                <td>ICT</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>F</td>
+            </tr>
+            
+            <tr>
+                <td>French</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>F</td>
+            </tr>
+            
+            <tr>
+                <td>Physical Education</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>F</td>
+            </tr>
+            
+            <tr>
+                <td>Art</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>F</td>
+            </tr>
+            
+            <tr>
+                <td>Music</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>F</td>
+            </tr>
+            
+            <tr>
+                <td>Agriculture</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>F</td>
+            </tr>
+            
+            <tr>
+                <td>Home Economics</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>F</td>
+            </tr>
+            
+            <tr>
+                <td>Civic Education</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>F</td>
+            </tr>
+            
+            <tr>
+                <td>Business Studies</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>F</td>
+            </tr>
+            
+            <tr>
+                <td>Religious Studies</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>F</td>
+            </tr>
+            
+            <tr>
+                <td>History</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>F</td>
+            </tr>
+            
+        </table>
+        
+        <table>
+            <tr>
+                <th>Grand Total</th>
+                <th>Percentage</th>
+            </tr>
+            <tr>
+                <td>100</td>
+                <td>6.67%</td>
+            </tr>
+        </table>
+        
+        <div class="comment-section">
+            <p><strong>Class Teacher’s Comment:</strong> </p>
+            <p><strong>Class Teacher’s Name:</strong> </p>
+            <div class="signature">
+                <div><strong>Sign:</strong> <span class="signature-line"></span></div>
+            </div>
+            
+            <p><strong>Administrator’s Comment:</strong> </p>
+            <p><strong>Administrator’s Name:</strong> </p>
+            <div class="signature">
+                <div><strong>Sign:</strong> <span class="signature-line"></span></div>
+            </div>
+        </div>
+        
+        <div class="download-btn">
+            <a href="" class="btn btn-primary">Download as PDF</a>
+        </div>
+    </div>
+</body>
+</html>

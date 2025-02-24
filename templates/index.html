@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Management</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        .container { width: 80%; margin: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; display: none; }
+        th, td { border: 1px solid black; padding: 10px; text-align: center; }
+        .btn { padding: 5px 10px; text-decoration: none; color: white; border-radius: 5px; }
+        .btn-edit { background-color: blue; }
+        .btn-delete { background-color: red; }
+        .btn-add { background-color: green; margin-bottom: 20px; display: inline-block; }
+        .btn-score { background-color: orange; }
+        #searchBox { padding: 8px; width: 50%; margin-bottom: 15px; }
+    </style>
+    <script>
+        function filterStudents() {
+            let input = document.getElementById("searchBox").value.toLowerCase();
+            let table = document.getElementById("studentTable");
+            let rows = table.getElementsByTagName("tr");
+            let found = false;
+
+            for (let i = 1; i < rows.length; i++) {
+                let cells = rows[i].getElementsByTagName("td");
+                let match = false;
+                for (let j = 0; j < cells.length; j++) {
+                    if (cells[j].innerText.toLowerCase().includes(input)) {
+                        match = true;
+                        break;
+                    }
+                }
+                rows[i].style.display = match ? "" : "none";
+                if (match) found = true;
+            }
+            table.style.display = found ? "table" : "none";
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h2>Student Management</h2>
+        <a href="{{ url_for('add_student') }}" class="btn btn-add">Add Student</a>
+        <br>
+        <input type="text" id="searchBox" onkeyup="filterStudents()" placeholder="Search for students...">
+        <table id="studentTable">
+            <tr>
+                <th>Name</th>
+                <th>Reg Number</th>
+                <th>Class</th>
+                <th>Age</th>
+                <th>Gender</th>
+                <th>Attendance</th>
+                <th>Enter Scores</th>
+                <th>Actions</th>
+            </tr>
+            {% for student in students %}
+            <tr>
+                <td>{{ student.name }}</td>
+                <td>{{ student.reg_num }}</td>
+                <td>{{ student.student_class }}</td>
+                <td>{{ student.age }}</td>
+                <td>{{ student.gender }}</td>
+                <td>{{ student.attendance }}</td>
+                <td>
+                    <a href="{{ url_for('enter_scores', student_id=student.id) }}" class="btn btn-score">Enter Scores</a>
+                </td>
+                <td>
+                    <a href="{{ url_for('edit_student', student_id=student.id) }}" class="btn btn-edit">Edit</a>
+                    {% if current_user.is_main_admin %}
+                        <form action="{{ url_for('delete_student', student_id=student.id) }}" method="post" style="display:inline;">
+                            <button type="submit" class="btn btn-delete" onclick="return confirm('Are you sure?')">Delete</button>
+                        </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Student</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        .container { width: 50%; margin: auto; text-align: left; }
+        label, input, select { display: block; width: 100%; margin-bottom: 10px; }
+        button { background-color: green; color: white; padding: 10px; border: none; cursor: pointer; width: 100%; }
+        button:hover { background-color: darkgreen; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Add Student</h2>
+        <form method="post" action="{{ url_for('add_student') }}">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" required>
+            
+            <label for="reg_num">Registration Number:</label>
+            <input type="text" id="reg_num" name="reg_num" required>
+            
+            <label for="student_class">Class:</label>
+            <input type="text" id="student_class" name="student_class" required>
+            
+            <label for="age">Age:</label>
+            <input type="number" id="age" name="age" required>
+            
+            <label for="gender">Gender:</label>
+            <select id="gender" name="gender" required>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+            </select>
+            
+            <label for="attendance">Attendance:</label>
+            <input type="text" id="attendance" name="attendance" required>
+            
+            <button type="submit">Add Student</button>
+        </form>
+        <br>
+        <a href="{{ url_for('index') }}">Back to Student List</a>
+    </div>
+</body>
+</html>
