@@ -1,13 +1,15 @@
-FROM ubuntu
+FROM python:3.10-slim
 
-RUN apt-get update
+RUN apt-get update && apt-get install -y nginx && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get install -y nginx
+WORKDIR /app
 
-RUN rm -rf /var/www/html/*
+COPY . /app
 
-COPY . /var/www/html
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY nginx.conf /etc/nginx/nginx.conf
 
 EXPOSE 80
 
-CMD [ "nginx", "-g", "daemon off;" ]
+CMD ["sh", "-c", "service nginx start && gunicorn -w 4 -b 0.0.0.0:8080 app:app"]

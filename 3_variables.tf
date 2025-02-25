@@ -4,3 +4,9 @@ variable "credentials" {
   default     = ""
 
 }
+
+variable "ssh_key" {
+  type        = string
+  sensitive   = true
+  default     = ""
+}

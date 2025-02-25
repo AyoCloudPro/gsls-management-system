@@ -23,6 +23,23 @@ resource "google_compute_subnetwork" "gsls-subnetwork" {
 }
 
 
+# Create a firewall rule
+# ===============================
+resource "google_compute_firewall" "gsls-firewall" {
+  name    = "gsls-firewall"
+  network = google_compute_network.main.name
+
+  allow {
+    protocol = "tcp"
+    ports    = ["22", "80", "8080"]
+
+  }
+
+  source_ranges = ["0.0.0.0/0"]
+  direction     = "INGRESS"
+}
+
+
 # Create a vm
 # =============================================================
 resource "google_compute_instance" "gsls-vm" {
@@ -52,6 +69,10 @@ resource "google_compute_instance" "gsls-vm" {
   scheduling {
     preemptible       = true
     automatic_restart = false
+  }
+
+  metadata = {
+    ssh-keys = var.ssh_key
   }
 
   service_account {
