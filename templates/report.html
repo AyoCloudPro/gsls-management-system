@@ -1,23 +1,102 @@
 <!DOCTYPE html>
-<html lang="en">
-<body>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image at Top Left</title>
+<html>
+<head>
+    <title>Student Report Card</title>
     <style>
-        .top-left-image {
-            position: absolute;
-            top: 10px;  /* Distance from the top */
-            left: 10px; /* Distance from the left */
-            width: 100px; /* Adjust width as needed */
-            height: auto;
-        }
+        body { font-family: Tahoma, sans-serif; text-align: center; position: relative; }
+        .container { width: 80%; margin: auto; border: 2px solid black; padding: 20px; position: relative; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid black; padding: 5px; text-align: center; }
+        th:not(:first-child) { writing-mode: vertical-rl; transform: rotate(180deg); } /* Only rotate score headers */
+        th:first-child, td:first-child { width: 40%; } /* Subject column larger */
+        th:not(:first-child), td:not(:first-child) { width: 7%; } /* Reduce score column widths */
+        .header { text-align: center; position: relative; }
+        .header img { position: absolute; top: 10px; left: 10px; height: 80px; }
+        .header h2 { font-family: 'Times New Roman', serif; color: red; }
+        .info-box { display: flex; justify-content: space-between; padding: 0 20px; }
+        .summary-box { border: 1px solid black; padding: 10px; margin-top: 20px; display: flex; justify-content: space-between; }
+        .summary-item { width: 24%; text-align: center; }
+        .watermark {position: absolute; z-index: -1; opacity: 0.1;}
+        .comment-section { margin-top: 20px; display: flex; justify-content: space-between; }
+        .comment-box { width: 45%; text-align: left; }
+        .signature { margin-top: 10px; font-style: italic; }
+        .download-btn { margin-top: 20px; padding: 10px 20px; background: blue; color: white; text-decoration: none; border-radius: 5px; display: inline-block; }
     </style>
 </head>
 <body>
-
-    <img src="your-image.jpg" alt="Top Left Image" class="top-left-image">
-
-    <p>Here is some content. The image is positioned at the top left and does not move with the text.</p>
+    <div class="container">
+        <div class="header">
+            <img src="file:///C:/Users/Conswella Edwards.DESKTOP-9LA4B2L/Documents/Projects/GSLS mangement system/static/logo.png">
+            <h2>NAME OF THE SCHOOL</h2>
+            <p>Address | Email: schoolemail@fmail.com | No: 011111111, 0222222222</p>
+            <h3>ACADEMY SCHOOL TERMINAL REPORT</h3>
+            <div class="info-box">
+                <p><strong>Class:</strong> {{ student.student_class }}</p>
+                <p><strong>First Term – 2024/2025 Academic Session</strong></p>
+            </div>
+        </div>
+        
+        <div class="info-box">
+            <p><strong>Name of Student:</strong> {{ student.name }}</p>
+            <p><strong>Registration Number:</strong> {{ student.reg_num }}</p>
+        </div>
+        <div class="info-box">
+            <p><strong>Age:</strong> {{ student.age }}</p>
+            <p><strong>Attendance:</strong> {{ student.attendance }}</p>
+        </div>
+        <p style="text-align: left; padding-left: 20px;"><strong>Gender:</strong> {{ student.gender }}</p>
+        
+        <table>
+            <tr>
+                <th>Subject</th>
+                <th>1st Test</th>
+                <th>2nd Test</th>
+                <th>Class Assessment</th>
+                <th>Home Assessment</th>
+                <th>Exam</th>
+                <th>Total</th>
+                <th>Grade</th>
+            </tr>
+            {% for score in scores %}
+            <tr>
+                <td>{{ score.subject }}</td>
+                <td>{{ score.first_test }}</td>
+                <td>{{ score.second_test }}</td>
+                <td>{{ score.class_assessment }}</td>
+                <td>{{ score.home_assessment }}</td>
+                <td>{{ score.exam }}</td>
+                <td>{{ score.total_score }}</td>
+                <td>{{ score.grade }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        
+        <div class="summary-box">
+            <div class="summary-item"><strong>Grand Total:</strong> {{ grand_total }}</div>
+            <div class="summary-item"><strong>Percentage:</strong> {{ percentage }}%</div>
+            <div class="summary-item"><strong>Term Ends:</strong> {{ term_end }}</div>
+            <div class="summary-item"><strong>Next Term Begins:</strong> {{ term_begin }}</div>
+        </div>
+        
+        <div class="comment-section">
+            <div class="comment-box">
+                <p><strong>Class Teacher's Comment:</strong></p>
+                <p>{{ teacher_comment }}</p>
+                <p class="signature"><strong>Teacher's Name:</strong> {{ teacher_name }}</p>
+                <p class="signature">Signature: ____________</p>
+            </div>
+            <div class="comment-box">
+                <p><strong>Administrator’s Comment:</strong></p>
+                <p>{{ admin_comment }}</p>
+                <p class="signature"><strong>Administrator’s Name:</strong> Mr. John Wick</p>
+                <p class="signature">Signature: ____________</p>
+            </div>
+        </div>
+        
+        <a href="{{ download_url }}" class="debug-btn" target="_blank" style="display: block; color: red; text-decoration: underline; font-size: 18px; cursor: pointer;">
+            Download PDF
+        </a>
+    </div>
+    <div class="watermark"></div>
 </body>
 </html>

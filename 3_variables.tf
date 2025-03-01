@@ -10,3 +10,5 @@ variable "ssh_key" {
   sensitive   = true
   default     = ""
 }
+
+

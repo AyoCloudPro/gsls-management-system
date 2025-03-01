@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Subjects</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+        }
+
+        .container {
+            width: 80%;
+            max-width: 800px;
+            margin: 40px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            color: #004080;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #004080;
+            color: white;
+        }
+
+        td {
+            background-color: #f9f9f9;
+        }
+
+        input, select {
+            padding: 8px;
+            width: 90%;
+            text-align: center;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        button {
+            background-color: #004080;
+            color: white;
+            padding: 10px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #002D5E;
+        }
+
+        .remove-btn {
+            background-color: red;
+            padding: 6px;
+            font-size: 14px;
+            border-radius: 5px;
+        }
+
+        .remove-btn:hover {
+            background-color: darkred;
+        }
+
+        .class-section {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f1f1f1;
+            border-radius: 8px;
+        }
+
+        .class-section h4 {
+            color: #004080;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Manage Subjects for Each Class</h2>
+        <form method="POST">
+            <label for="class_name">Select Class:</label>
+            <select name="class_name" id="class_name" required>
+                {% for class in classes %}
+                    <option value="{{ class }}">{{ class }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="subject">Enter Subject:</label>
+            <input type="text" name="subject" id="subject" required>
+
+            <button type="submit">Add Subject</button>
+        </form>
+
+        <h3>Existing Class-Subject Mappings</h3>
+
+        {% for class, subjects in class_subjects.items() %}
+            <div class="class-section">
+                <h4>{{ class }}</h4>
+                <table>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Action</th>
+                    </tr>
+                    {% for subject_entry in subjects %}
+                    <tr>
+                        <td>{{ subject_entry.subject }}</td>
+                        <td>
+                            <form method="POST" action="{{ url_for('remove_subject', mapping_id=subject_entry.id) }}">
+                                <button type="submit" class="remove-btn">Remove</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

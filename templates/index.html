@@ -11,6 +11,18 @@
         .btn-edit { background-color: blue; }
         .btn-delete { background-color: red; }
         .btn-add { background-color: green; margin-bottom: 20px; display: inline-block; }
+        .btn-dashboard {
+            background-color: #ffa500; /* Orange */
+            padding: 10px;
+            text-decoration: none;
+            color: white;
+            border-radius: 5px;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        .btn-dashboard:hover {
+            background-color: #cc8400;
+        }
         .btn-score { background-color: orange; }
         #searchBox { padding: 8px; width: 50%; margin-bottom: 15px; }
     </style>
@@ -40,6 +52,8 @@
 <body>
     <div class="container">
         <h2>Student Management</h2>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-dashboard">Go to Dashboard</a>
+
         <a href="{{ url_for('add_student') }}" class="btn btn-add">Add Student</a>
         <br>
         <input type="text" id="searchBox" onkeyup="filterStudents()" placeholder="Search for students...">

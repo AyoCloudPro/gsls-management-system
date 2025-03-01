@@ -67,7 +67,7 @@ resource "google_compute_instance" "gsls-vm" {
   }
       // Optional config to make the instance ephemeral
   scheduling {
-    preemptible       = true
+    preemptible       = false
     automatic_restart = false
   }
 

@@ -1,0 +1,203 @@
+{% block content %}
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+    }
+
+    .container {
+        width: 80%;
+        margin: 40px auto;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+        color: #004080;
+        text-align: center;
+    }
+
+    /* Search Bar */
+    .search-container {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+
+    .search-container input {
+        width: 40%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+    }
+
+    /* Teacher Table */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+
+    th, td {
+        border: 1px solid #ddd;
+        padding: 12px;
+        text-align: center;
+    }
+
+    th {
+        background-color: #004080;
+        color: white;
+    }
+
+    tr:nth-child(even) {
+        background-color: #f2f2f2;
+    }
+
+    .delete-btn {
+        background-color: red;
+        padding: 6px 12px;
+        font-size: 14px;
+        border-radius: 5px;
+        border: none;
+        color: white;
+        cursor: pointer;
+    }
+
+    .delete-btn:hover {
+        background-color: darkred;
+    }
+
+    /* Floating Add Teacher Button */
+    .fab {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #004080;
+        color: white;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        cursor: pointer;
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .fab:hover {
+        background: #002D5E;
+    }
+
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.4);
+    }
+
+    .modal-content {
+        background-color: white;
+        margin: 10% auto;
+        padding: 20px;
+        width: 40%;
+        border-radius: 10px;
+    }
+
+    .close-btn {
+        color: red;
+        float: right;
+        font-size: 24px;
+        cursor: pointer;
+    }
+</style>
+
+<div class="container">
+    <h2>Manage Teachers</h2>
+
+    <!-- Search Bar -->
+    <div class="search-container">
+        <input type="text" id="searchBox" onkeyup="searchTeachers()" placeholder="Search for teachers...">
+    </div>
+
+    <!-- Teacher List -->
+    <h3>Existing Teachers</h3>
+    <table id="teacherTable">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for teacher in teachers %}
+            <tr>
+                <td>{{ teacher.username }}</td>
+                <td>
+                    <form action="{{ url_for('delete_teacher', teacher_id=teacher.id) }}" method="post">
+                        {{ form.hidden_tag() }}
+                        <button type="submit" class="delete-btn" onclick="return confirm('Are you sure?')">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Floating Button to Add Teacher -->
+<div class="fab" onclick="openModal()">+</div>
+
+<!-- Add Teacher Modal -->
+<div id="addTeacherModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal()">&times;</span>
+        <h3>Add New Teacher</h3>
+        <form method="POST" action="{{ url_for('manage_teachers') }}">
+            {{ form.hidden_tag() }}
+            <label for="username">Username:</label>
+            {{ form.username(class="form-control", placeholder="Enter username") }}
+
+            <label for="password">Password:</label>
+            {{ form.password(class="form-control", placeholder="Enter password") }}
+
+            <button type="submit">{{ form.submit.label }}</button>
+        </form>
+    </div>
+</div>
+
+<!-- JavaScript for Modal & Search -->
+<script>
+    function openModal() {
+        document.getElementById("addTeacherModal").style.display = "block";
+    }
+
+    function closeModal() {
+        document.getElementById("addTeacherModal").style.display = "none";
+    }
+
+    function searchTeachers() {
+        let input = document.getElementById("searchBox").value.toLowerCase();
+        let table = document.getElementById("teacherTable");
+        let rows = table.getElementsByTagName("tr");
+
+        for (let i = 1; i < rows.length; i++) {
+            let username = rows[i].getElementsByTagName("td")[0];
+            if (username) {
+                let textValue = username.textContent || username.innerText;
+                rows[i].style.display = textValue.toLowerCase().includes(input) ? "" : "none";
+            }
+        }
+    }
+</script>
+
+{% endblock %}

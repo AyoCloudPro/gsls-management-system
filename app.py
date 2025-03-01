@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, send_file, session, flash
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import func
 import pdfkit
 import subprocess
 import time
@@ -10,16 +11,12 @@ from functools import wraps
 from flask_login import LoginManager
 from flask_login import login_required, current_user, UserMixin, logout_user, login_user
 from dotenv import load_dotenv
+from flask_wtf.csrf import CSRFProtect
+from forms import DeleteAdminForm
+from forms import AddTeacherForm
+from forms import LoginForm
 
 import os
-
-
-# wkhtmltopdf location
-# ==============================
-config = pdfkit.configuration(wkhtmltopdf=r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe")
-options = {
-    'enable-local-file-access': None
-}
 
 
 # Load .env file
@@ -27,26 +24,27 @@ options = {
 load_dotenv()  
 
 
+# wkhtmltopdf location
+# ==============================
+config = pdfkit.configuration(wkhtmltopdf=os.getenv("WKHTMLTOPDF_PATH"))
+options = {
+    'enable-local-file-access': None
+}
+
+
 # App config
 # =========================
 app = Flask(__name__)
+csrf = CSRFProtect(app)
 login_manager = LoginManager(app)
+login_manager.init_app(app)
+login_manager.login_view = 'login'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = os.getenv('SECRET_KEY')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 db = SQLAlchemy(app)
 
 
-# Login required decorator
-# ==========================
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'admin_logged_in' not in session:
-            print("🔴 User not logged in! Redirecting to login...")  # Debugging
-            return redirect(url_for('login'))
-        return f(*args, **kwargs)
-    return decorated_function
 
 
 # Student Model
@@ -72,6 +70,7 @@ class Score(db.Model):
     class_assessment = db.Column(db.Integer, default=0)
     home_assessment = db.Column(db.Integer, default=0)
     exam = db.Column(db.Integer, default=0)
+    teacher_comment = db.Column(db.Text, nullable=True)
 
     @property
     def total_score(self):
@@ -94,11 +93,19 @@ class Score(db.Model):
 
 # Admin Module
 # ==================
-class Admin(db.Model, UserMixin):
+class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
-    is_main_admin = db.Column(db.Boolean, default=False)  # ✅ True = Developer, False = School Admin
+    VALID_ROLES = ['main_admin', 'school_admin', 'teacher']
+    role = db.Column(db.String(50), nullable=False)  # ✅ True = Developer, False = School Admin
+
+    def __init__(self, username, password, role):
+        if role not in self.VALID_ROLES:
+            raise ValueError("Invalid role")
+        self.username = username.lower()
+        self.set_password(password)
+        self.role = role
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -106,95 +113,116 @@ class Admin(db.Model, UserMixin):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+    @property
+    def is_admin(self):
+        return self.role in ["main_admin", "school_admin"]
 
-# ✅ Create default admins if they don't exist
-# with app.app_context():
-#     db.create_all()
 
-#     dev_password = os.getenv("DEV_ADMIN_PASSWORD", "default_password")
-#     school_password = os.getenv("SCHOOL_ADMIN_PASSWORD", "default_password")
+class ClassSubject(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    student_class = db.Column(db.String(50), nullable=False)  # Example: "JSS1", "SS2"
+    subject = db.Column(db.String(100), nullable=False)  # Example: "Physics", "Chemistry"
 
-#     if not Admin.query.filter_by(username="developer").first():
-#         dev_admin = Admin(username="developer", is_main_admin=True)  # You = Main Admin
-#         dev_admin.set_password(dev_password)
-#         db.session.add(dev_admin)
 
-#     if not Admin.query.filter_by(username="school").first():
-#         school_admin = Admin(username="school", is_main_admin=False)  # School Admin
-#         school_admin.set_password(school_password)
-#         db.session.add(school_admin)
-
-#     db.session.commit()
-#     print("✅ Default admins created: Developer (dev_password), School Admin (school_password)")
-
-   
 
 # Role-based access control decorator
 # ===================================
-def role_required(main_admin_required=False):
+def role_required(*required_roles):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            if 'admin_logged_in' not in session:
+            if 'user_id' not in session:
+                flash('You need to log in first.', 'danger')
                 return redirect(url_for('login'))
-            
-            if main_admin_required and not session.get('is_main_admin', False):
-                return "Access Denied: You do not have permission to perform this action.", 403
-            
+
+            user = User.query.get(session['user_id'])
+            print(f"🔍 Checking role for user: {user.username}, Role: {user.role}")  # Debugging
+
+            if not user or user.role not in required_roles:
+                flash('Unauthorized access!', 'danger')
+                print(f"🚫 Access denied for {user.username} (Role: {user.role})")  # Debugging
+                return redirect(url_for('dashboard'))
+
             return f(*args, **kwargs)
         return decorated_function
     return decorator
 
 
+
+def generate_csrf_token():
+    if '_csrf_token' not in session:
+        session['_csrf_token'] = os.urandom(24).hex()  # ✅ Generates a new CSRF token
+    return session['_csrf_token']
+
+app.jinja_env.globals['csrf_token'] = generate_csrf_token  # ✅ Makes the token available in all templates
+
 # Login manager 
 # ======================
 @login_manager.user_loader
 def load_user(user_id):
-    return Admin.query.get(int(user_id))
+    return User.query.get(int(user_id))
 
 
 # Login Route
 # ======================
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        admin = Admin.query.filter_by(username=username).first()
-        if admin and admin.check_password(password):
-            login_user(admin)
-            session['admin_logged_in'] = True
-            session['is_main_admin'] = admin.is_main_admin
-            return redirect(url_for('admin_dashboard'))
-        else:
-            return render_template('login.html', error="Invalid username or password")
-    return render_template('login.html')
+    form = LoginForm()
+    if form.validate_on_submit():  # ✅ Flask-WTF automatically checks CSRF token
+        username = form.username.data
+        password = form.password.data
+        user = User.query.filter_by(username=username).first()
 
+        if not user or not user.check_password(password):
+            flash('Invalid credentials.', 'danger')
+            return redirect(url_for('login'))
+
+        login_user(user)
+        session['user_id'] = user.id
+        session['role'] = user.role  # ✅ Store role in session
+
+        return redirect(url_for('dashboard'))
+
+    return render_template('login.html', form=form)  # ✅ Pass `form` to template
 
 # Logout Route
 # ======================
 @app.route('/logout')
 def logout():
-    logout_user()
     session.clear()
+    flash('Logged out successfully.', 'success')
     return redirect(url_for('login'))
 
 
-# Dashboard Route
-# =============================
-@app.route('/admin_dashboard')
+@app.route('/dashboard')
 @login_required
-def admin_dashboard():
-    if not current_user.is_authenticated:
+def dashboard():
+    if 'role' not in session:
         return redirect(url_for('login'))
 
-    print("Current User:", current_user.username)
-    print("Is Main Admin:", current_user.is_main_admin)  # Debugging
-
     total_students = Student.query.count()
-    total_subjects = db.session.query(Score.subject).distinct().count()
-    total_admins = Admin.query.count()
-    return render_template('admin_dashboard.html', current_user=current_user, total_students=total_students, total_subjects=total_subjects, total_admins=total_admins)
+    total_subjects = ClassSubject.query.count()
+    total_admins = User.query.filter_by(role='school_admin').count()
+    total_teachers = User.query.filter_by(role='teacher').count()
+
+    return render_template(
+        'dashboard.html',
+        role=session['role'],  # Use session role instead of current_user.role
+        total_students=total_students,
+        total_subjects=total_subjects,
+        total_admins=total_admins,
+        total_teachers=total_teachers
+    )
+
+
+
+@app.route('/debug_session')
+def debug_session():
+    return {
+        "user_id": session.get('user_id'),
+        "role": session.get('role'),
+        "authenticated": current_user.is_authenticated
+    }
 
 
 
@@ -202,49 +230,92 @@ def admin_dashboard():
 # ===========================================
 @app.route('/manage_admins', methods=['GET', 'POST'])
 @login_required
-@role_required(main_admin_required=True)
+@role_required("main_admin")
 def manage_admins():
-    admins = Admin.query.all()
-    return render_template('manage_admins.html', admins=admins)
+    form = DeleteAdminForm()  # ✅ Create an instance of the form
 
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        role = "main_admin" if request.form.get('is_main_admin') == "1" else "school_admin"
 
-# Route to add a new admin
-# ======================================
-@app.route('/add_admin', methods=['POST'])
-@login_required
-@role_required(main_admin_required=True)
-def add_admin():
-    username = request.form.get('username')
-    password = request.form.get('password')
-    is_main_admin = request.form.get('is_main_admin') == 'on'
-    
-    if Admin.query.filter_by(username=username).first():
-        flash('Username already exists!', 'danger')
+        # Check if username already exists
+        existing_user = User.query.filter_by(username=username).first()
+        if existing_user:
+            flash("Username already exists!", "danger")
+        else:
+            new_admin = User(username=username, password=password, role=role)
+            new_admin.set_password(password)
+            db.session.add(new_admin)
+            db.session.commit()
+            flash("Admin added successfully!", "success")
+
         return redirect(url_for('manage_admins'))
-    
-    hashed_password = generate_password_hash(password)
-    new_admin = Admin(username=username, password=hashed_password, is_main_admin=is_main_admin)
-    db.session.add(new_admin)
-    db.session.commit()
-    flash('New admin added successfully!', 'success')
-    return redirect(url_for('manage_admins'))
+
+    admins = User.query.all()
+    return render_template('manage_admins.html', admins=admins, form=form)  # ✅ Pass `form` to the template
 
 
 # Route to delete an admin (except the main admin themselves)
 # =================================================================
 @app.route('/delete_admin/<int:admin_id>', methods=['POST'])
 @login_required
-@role_required(main_admin_required=True)
+@role_required("main_admin")
 def delete_admin(admin_id):
-    admin = Admin.query.get_or_404(admin_id)
-    if admin.is_main_admin:
-        flash('You cannot delete the main admin!', 'danger')
-        return redirect(url_for('manage_admins'))
-    
-    db.session.delete(admin)
-    db.session.commit()
-    flash('Admin deleted successfully!', 'success')
+    form = DeleteAdminForm()  # ✅ Initialize the Flask-WTF form
+
+    if form.validate_on_submit():  # ✅ Ensure CSRF protection is working
+        admin = User.query.get_or_404(admin_id)
+        if admin.role == "main_admin":
+            flash('You cannot delete the main admin!', 'danger')
+            return redirect(url_for('manage_admins'))
+
+        db.session.delete(admin)
+        db.session.commit()
+        flash('Admin deleted successfully!', 'success')
+    else:
+        flash('CSRF token missing or invalid.', 'danger')
+
     return redirect(url_for('manage_admins'))
+
+
+@app.route('/manage_teachers', methods=['GET', 'POST'])
+@login_required
+@role_required("main_admin", "school_admin")
+def manage_teachers():
+    form = AddTeacherForm()
+
+    if form.validate_on_submit():
+        username = form.username.data
+        password = form.password.data
+
+        existing_user = User.query.filter_by(username=username).first()
+        if existing_user:
+            flash("Username already exists!", "danger")
+        else:
+            new_teacher = User(username=username, password=password, role="teacher")
+            new_teacher.set_password(password)
+            db.session.add(new_teacher)
+            db.session.commit()
+            flash("Teacher added successfully!", "success")
+
+        return redirect(url_for('manage_teachers'))
+
+    teachers = User.query.filter_by(role="teacher").all()
+    return render_template('manage_teachers.html', teachers=teachers, form=form)
+
+
+@app.route('/delete_teacher/<int:teacher_id>', methods=['POST'])
+@login_required
+@role_required("main_admin", "school_admin")  # ✅ Only main admins can delete teachers
+def delete_teacher(teacher_id):
+    teacher = User.query.get_or_404(teacher_id)
+
+    db.session.delete(teacher)
+    db.session.commit()
+    flash('Teacher deleted successfully!', 'success')
+
+    return redirect(url_for('manage_teachers'))
 
 
 # Route to student management page
@@ -252,6 +323,8 @@ def delete_admin(admin_id):
 @app.route('/')
 @login_required
 def index():
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))  # ✅ Ensure guests go to login first
     students = Student.query.all()
     return render_template('index.html', students=students)
 
@@ -274,7 +347,7 @@ def add_student():
         db.session.commit()
         return redirect(url_for('index'))
 
-    return render_template('add_student.html')
+    return render_template('add_student.html', student={})
 
 
 # Route to edit students
@@ -301,12 +374,57 @@ def edit_student(student_id):
 # ===============================
 @app.route('/delete_student/<int:student_id>', methods=['POST'])
 @login_required
-@role_required(main_admin_required=True)
+@role_required("main_admin")
 def delete_student(student_id):
     student = Student.query.get_or_404(student_id)
     db.session.delete(student)
     db.session.commit()
     return redirect(url_for('index'))
+
+
+@app.route('/manage_subjects', methods=['GET', 'POST'])
+def manage_subjects():
+    # Define all classes in the correct order
+    ordered_classes = [
+        "Pre School", "Pre School 2",
+        "Level 1", "Level 2", "Level 3",
+        "Primary 1", "Primary 2", "Primary 3", "Primary 4", "Primary 5",
+        "JSS 1", "JSS 2"
+    ]
+
+    # Fetch existing classes in the database
+    existing_classes = [cs.student_class for cs in ClassSubject.query.distinct(ClassSubject.student_class)]
+
+    # Remove duplicates but maintain the custom order
+    classes = [cls for cls in ordered_classes if cls in existing_classes or cls in ordered_classes]
+
+    # Fetch subjects for each class
+    class_subjects = {class_name: ClassSubject.query.filter_by(student_class=class_name).all() for class_name in classes}
+
+    if request.method == 'POST':
+        class_name = request.form['class_name']
+        subject = request.form['subject']
+
+        if not ClassSubject.query.filter_by(student_class=class_name, subject=subject).first():
+            new_subject = ClassSubject(student_class=class_name, subject=subject)
+            db.session.add(new_subject)
+            db.session.commit()
+
+        return redirect(url_for('manage_subjects'))
+
+    return render_template('manage_subjects.html', classes=classes, class_subjects=class_subjects)
+
+
+
+
+@app.route('/remove_subject/<int:mapping_id>', methods=['POST'])
+def remove_subject(mapping_id):
+    subject_entry = ClassSubject.query.get(mapping_id)
+    if subject_entry:
+        db.session.delete(subject_entry)
+        db.session.commit()
+    return redirect(url_for('manage_subjects'))
+
 
 
 # Route to enter scores
@@ -315,9 +433,18 @@ def delete_student(student_id):
 @login_required
 def enter_scores(student_id):
     student = Student.query.get_or_404(student_id)
-    subjects = ["Mathematics", "English", "Science", "Social Studies", "ICT", "French", "Physical Education", "Art", "Music", "Agriculture", "Home Economics", "Civic Education", "Business Studies", "Religious Studies", "History"]
+    print(f"DEBUG: Student Class = {student.student_class}")  # Check student's class
+
+    subjects = [cs.subject for cs in ClassSubject.query.filter(func.lower(ClassSubject.student_class) == func.lower(student.student_class)).all()]
+    print(f"DEBUG: Subjects Retrieved = {subjects}")  # Check if subjects are retrieved
     
+    scores = {subject: {} for subject in subjects}
+    print(f"DEBUG: Scores Retrieved = {scores}")  # Check if scores exist
+
+
     if request.method == 'POST':
+        teacher_comment = request.form.get('teacher_comment', '').strip()
+
         for subject in subjects:
             first_test = int(request.form.get(f'{subject}_first_test', 0) or 0)
             second_test = int(request.form.get(f'{subject}_second_test', 0) or 0)
@@ -336,6 +463,7 @@ def enter_scores(student_id):
             score.home_assessment = home_assessment
             score.exam = exam
         
+        student.teacher_comment = teacher_comment
         db.session.commit()
         return redirect(url_for('view_report', student_id=student_id))
     
@@ -348,16 +476,32 @@ def enter_scores(student_id):
 @app.route('/view_report/<int:student_id>')
 @login_required
 def view_report(student_id):
-    student = Student.query.get_or_404(student_id)
-    scores = Score.query.filter_by(student_id=student_id).all()
+    subjects = [cs.subject for cs in ClassSubject.query.filter_by(student_class=student.student_class).all()]
+    scores = Score.query.filter_by(student_id=student_id).filter(Score.subject.in_(subjects)).all()
     grand_total = sum(score.total_score for score in scores)
-    percentage = (grand_total / (15 * 100)) * 100  # Assuming 15 subjects, max 100 each
+    max_total = len(subjects) * 100
+    percentage = (grand_total / max_total) * 100 if max_total > 0 else 0
+
+    if percentage >= 80:
+        admin_comment = "Excellent performance! Keep it up."
+    elif percentage >= 70:
+        admin_comment = "Very good! Keep striving for excellence."
+    elif percentage >= 60:
+        admin_comment = "Good performance. Could do better next term."
+    elif percentage >= 50:
+        admin_comment = "Fair result. Work harder next term."
+    elif percentage >= 40:
+        admin_comment = "Poor result. Must work hard to improve on this performance."
+    elif percentage >= 30:
+        admin_comment = "Very poor result. Must work hard to improve on this performance."
+    else:
+        admin_comment = "Advised to repeat."
 
     download_url = url_for('download_report', reg_num=student.reg_num)
     print(f"Download URL: {download_url}")  # Debugging
 
 
-    return render_template('report.html', student=student, scores=scores, grand_total=grand_total, percentage=percentage, download_url=url_for('download_report', reg_num=student.reg_num))
+    return render_template('report.html', student=student, scores=scores, grand_total=grand_total, percentage=percentage, admin_comment=admin_comment, download_url=url_for('download_report', reg_num=student.reg_num))
 
 
 # Route to download report card

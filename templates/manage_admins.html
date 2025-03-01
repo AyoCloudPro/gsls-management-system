@@ -1,48 +1,154 @@
 {% block content %}
-<h2>Manage Admins</h2>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        text-align: center;
+    }
 
-<!-- Add Admin Form -->
-<form method="POST" action="{{ url_for('manage_admins') }}">
-    <label for="username">Username:</label>
-    <input type="text" name="username" required>
-    
-    <label for="password">Password:</label>
-    <input type="password" name="password" required>
-    
-    <label for="is_main_admin">Role:</label>
-    <select name="is_main_admin">
-        <option value="0">School Admin</option>
-        <option value="1">Main Admin</option>
-    </select>
-    
-    <button type="submit">Add Admin</button>
-</form>
+    .container {
+        width: 60%;
+        margin: 40px auto;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        text-align: left;
+    }
 
-<!-- List of Admins -->
-<table>
-    <thead>
-        <tr>
-            <th>Username</th>
-            <th>Role</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for admin in admins %}
-        <tr>
-            <td>{{ admin.username }}</td>
-            <td>{% if admin.is_main_admin %} Main Admin {% else %} School Admin {% endif %}</td>
-            <td>
-                <!-- Prevent deletion of main admin -->
-                {% if not admin.is_main_admin %}
-                <form method="POST" action="{{ url_for('delete_admin', admin_id=admin.id) }}" style="display:inline;">
-                    <button type="submit" onclick="return confirm('Are you sure?')">Delete</button>
-                </form>
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+    h2 {
+        color: #004080;
+        text-align: center;
+    }
+
+    form {
+        background: #f9f9f9;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+
+    label {
+        font-weight: bold;
+        display: block;
+        margin-top: 10px;
+    }
+
+    input, select {
+        width: 100%;
+        padding: 10px;
+        margin-top: 5px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+    }
+
+    button {
+        background-color: #004080;
+        color: white;
+        padding: 10px;
+        border: none;
+        cursor: pointer;
+        border-radius: 5px;
+        font-size: 16px;
+        width: 100%;
+        margin-top: 15px;
+    }
+
+    button:hover {
+        background-color: #002D5E;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+
+    th, td {
+        border: 1px solid #ddd;
+        padding: 12px;
+        text-align: center;
+    }
+
+    th {
+        background-color: #004080;
+        color: white;
+    }
+
+    tr:nth-child(even) {
+        background-color: #f2f2f2;
+    }
+
+    .delete-btn {
+        background-color: red;
+        padding: 6px 12px;
+        font-size: 14px;
+        border-radius: 5px;
+        border: none;
+        color: white;
+        cursor: pointer;
+    }
+
+    .delete-btn:hover {
+        background-color: darkred;
+    }
+
+    .restricted {
+        color: gray;
+        font-style: italic;
+    }
+</style>
+
+<div class="container">
+    <h2>Manage Admins</h2>
+
+    <!-- Add Admin Form -->
+    <form method="POST" action="{{ url_for('manage_admins') }}">
+        <label for="username">Username:</label>
+        <input type="text" name="username" placeholder="Enter username" required>
+        
+        <label for="password">Password:</label>
+        <input type="password" name="password" placeholder="Enter password" required>
+        
+        <label for="is_main_admin">Role:</label>
+        <select name="is_main_admin">
+            <option value="0">School Admin</option>
+            <option value="1">Main Admin</option>
+        </select>
+        
+        <button type="submit">Add Admin</button>
+    </form>
+
+    <!-- List of Admins -->
+    <h3>Existing Admins</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Role</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for admin in admins %}
+            <tr>
+                <td>{{ admin.username }}</td>
+                <td>{% if admin.role == "main_admin" %} Main Admin {% else %} School Admin {% endif %}</td>
+                <td>
+                    {% if admin.role == "main_admin" %}
+                        <span class="restricted">Cannot delete main admin</span>
+                    {% else %}
+                        <form action="{{ url_for('delete_admin', admin_id=admin.id) }}" method="post">
+                            {{ form.hidden_tag() }}  <!-- ✅ Ensure CSRF protection -->
+                            <button type="submit" class="delete-btn" onclick="return confirm('Are you sure?')">Delete</button>
+                        </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 
 {% endblock %}

@@ -21,7 +21,21 @@
             <input type="text" id="reg_num" name="reg_num" value="{{ student.reg_num }}" required>
             
             <label for="student_class">Class:</label>
-            <input type="text" id="student_class" name="student_class" value="{{ student.student_class }}" required>
+            <select id="student_class" name="student_class" required>
+                <option value="" disabled selected>Select Class</option>
+                <option value="Pre School" {% if student.student_class == "Pre School" %}selected{% endif %}>Pre School</option>
+                <option value="Pre School 2" {% if student.student_class == "Pre School 2" %}selected{% endif %}>Pre School 2</option>
+                <option value="Level 1" {% if student.student_class == "Level 1" %}selected{% endif %}>Level 1</option>
+                <option value="Level 2" {% if student.student_class == "Level 2" %}selected{% endif %}>Level 2</option>
+                <option value="Level 3" {% if student.student_class == "Level 3" %}selected{% endif %}>Level 3</option>
+                <option value="Primary 1" {% if student.student_class == "Primary 1" %}selected{% endif %}>Primary 1</option>
+                <option value="Primary 2" {% if student.student_class == "Primary 2" %}selected{% endif %}>Primary 2</option>
+                <option value="Primary 3" {% if student.student_class == "Primary 3" %}selected{% endif %}>Primary 3</option>
+                <option value="Primary 4" {% if student.student_class == "Primary 4" %}selected{% endif %}>Primary 4</option>
+                <option value="Primary 5" {% if student.student_class == "Primary 5" %}selected{% endif %}>Primary 5</option>
+                <option value="JSS 1" {% if student.student_class == "JSS 1" %}selected{% endif %}>JSS 1</option>
+                <option value="JSS 2" {% if student.student_class == "JSS 2" %}selected{% endif %}>JSS 2</option>
+            </select>
             
             <label for="age">Age:</label>
             <input type="number" id="age" name="age" value="{{ student.age }}" required>
