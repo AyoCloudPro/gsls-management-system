@@ -36,8 +36,13 @@ jobs:
 
       - name: Set up SSH Agent
         run: |
-          echo "${{secrets.PRIVATE_SSH_KEY}}" > key
-          chmod 400 key
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PRIVATE_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+
+      - name: Test SSH Connection
+        run: ssh -i ~/.ssh/id_rsa -v ${{ secrets.USERNAME }}@${{ secrets.SERVER_IP }} "echo SSH Connection Successful"
 
       - name: Deploy to Server
         run: |
