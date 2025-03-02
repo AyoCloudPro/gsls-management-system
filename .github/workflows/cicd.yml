@@ -39,7 +39,7 @@ jobs:
         run: |
           echo "${{ secrets.PRIVATE_SSH_KEY }}" > key
           chmod 400 key
-          ssh -o StrictHostKeyChecking=no -i key ${{ secrets.USERNAME }}@${{ secrets.SERVER_IP }} << 'EOF'
+          ssh -v -o StrictHostKeyChecking=no -i key ${{ secrets.USERNAME }}@${{ secrets.SERVER_IP }} << 'EOF'
             docker pull ${{ vars.DOCKERHUB_USERNAME }}/gsls_management_system:latest
             docker stop gsls_management_system || true
             docker rm gsls_management_system || true
@@ -76,3 +76,5 @@ jobs:
       - name: Check Container Logs
         run: |
           ssh -o StrictHostKeyChecking=no -i key ${{ secrets.USERNAME }}@${{ secrets.SERVER_IP }} "docker logs gsls_management_system"
+
+          
