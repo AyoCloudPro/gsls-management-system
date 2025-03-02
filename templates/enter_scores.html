@@ -126,18 +126,8 @@
             <input type="text" name="teacher_name" id="teacher_name" value="{{ teacher_name or '' }}" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
             <br><br>
 
-            <label for="admin_comment"><strong>Admin Comment:</strong></label>
-            <select name="admin_comment" id="admin_comment" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
-                <option value="">Select a Comment</option>
-                <option value="Excellent Performance">Excellent Performance</option>
-                <option value="Good Job, Keep Improving">Good Job, Keep Improving</option>
-                <option value="Fair, Needs More Effort">Fair, Needs More Effort</option>
-                <option value="Work Harder Next Term">Work Harder Next Term</option>
-                <option value="Poor, Needs Serious Improvement">Poor, Needs Serious Improvement</option>
-            </select>
-            <br><br>
-
-            <button type="submit">Save Scores</button>
+            <button type="submit" name="action" value="save">Save Scores</button>
+            <button type="submit" name="action" value="view_report">View Report</button>
         </form>
         <a href="{{ url_for('index') }}" class="back-link">← Back to Student List</a>
     </div>

@@ -71,6 +71,7 @@ class Score(db.Model):
     home_assessment = db.Column(db.Integer, default=0)
     exam = db.Column(db.Integer, default=0)
     teacher_comment = db.Column(db.Text, nullable=True)
+    admin_comment = db.Column(db.String(255), nullable=True)
 
     @property
     def total_score(self):
@@ -122,6 +123,23 @@ class ClassSubject(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     student_class = db.Column(db.String(50), nullable=False)  # Example: "JSS1", "SS2"
     subject = db.Column(db.String(100), nullable=False)  # Example: "Physics", "Chemistry"
+
+
+def get_admin_comment(percentage):
+    if percentage >= 80:
+        return "Excellent performance! Keep it up."
+    elif percentage >= 70:
+        return "Very good! Keep striving for excellence."
+    elif percentage >= 60:
+        return "Good performance. Could do better next term."
+    elif percentage >= 50:
+        return "Fair result. Work harder next term."
+    elif percentage >= 40:
+        return "Poor result. Must work hard to improve on this performance."
+    elif percentage >= 30:
+        return "Very poor result. Must work hard to improve on this performance."
+    else:
+        return "Advised to repeat."
 
 
 
@@ -433,17 +451,12 @@ def remove_subject(mapping_id):
 @login_required
 def enter_scores(student_id):
     student = Student.query.get_or_404(student_id)
-    print(f"DEBUG: Student Class = {student.student_class}")  # Check student's class
-
     subjects = [cs.subject for cs in ClassSubject.query.filter(func.lower(ClassSubject.student_class) == func.lower(student.student_class)).all()]
-    print(f"DEBUG: Subjects Retrieved = {subjects}")  # Check if subjects are retrieved
     
-    scores = {subject: {} for subject in subjects}
-    print(f"DEBUG: Scores Retrieved = {scores}")  # Check if scores exist
-
-
     if request.method == 'POST':
-        teacher_comment = request.form.get('teacher_comment', '').strip()
+        total_score = 0  # Keep track of the total score
+        max_score = len(subjects) * 100  # Maximum possible score
+        teacher_comment = request.form.get('teacher_comment', '').strip()  # ✅ Get teacher's comment
 
         for subject in subjects:
             first_test = int(request.form.get(f'{subject}_first_test', 0) or 0)
@@ -451,6 +464,9 @@ def enter_scores(student_id):
             class_assessment = int(request.form.get(f'{subject}_class_assessment', 0) or 0)
             home_assessment = int(request.form.get(f'{subject}_home_assessment', 0) or 0)
             exam = int(request.form.get(f'{subject}_exam', 0) or 0)
+
+            total_subject_score = first_test + second_test + class_assessment + home_assessment + exam
+            total_score += total_subject_score  # Add to grand total
             
             score = Score.query.filter_by(student_id=student_id, subject=subject).first()
             if not score:
@@ -462,11 +478,28 @@ def enter_scores(student_id):
             score.class_assessment = class_assessment
             score.home_assessment = home_assessment
             score.exam = exam
-        
-        student.teacher_comment = teacher_comment
+
+            # ✅ Store teacher's comment for each subject
+            score.teacher_comment = teacher_comment  
+
+        # Calculate percentage and store admin comment
+        percentage = (total_score / max_score) * 100 if max_score > 0 else 0
+        admin_comment = get_admin_comment(percentage)
+
+        # ✅ Save admin comment for all subjects
+        for score in Score.query.filter_by(student_id=student_id).all():
+            score.admin_comment = admin_comment
+
         db.session.commit()
-        return redirect(url_for('view_report', student_id=student_id))
-    
+
+        # ✅ Redirect based on which button was clicked
+        action = request.form.get("action")
+        if action == "view_report":
+            return redirect(url_for('view_report', student_id=student_id))
+        else:
+            flash("Scores saved successfully!", "success")
+            return redirect(url_for('enter_scores', student_id=student_id))
+
     scores = {score.subject: score for score in Score.query.filter_by(student_id=student_id).all()}
     return render_template('enter_scores.html', student=student, subjects=subjects, scores=scores)
 
@@ -476,32 +509,18 @@ def enter_scores(student_id):
 @app.route('/view_report/<int:student_id>')
 @login_required
 def view_report(student_id):
+    student = Student.query.get_or_404(student_id)
     subjects = [cs.subject for cs in ClassSubject.query.filter_by(student_class=student.student_class).all()]
     scores = Score.query.filter_by(student_id=student_id).filter(Score.subject.in_(subjects)).all()
+    
     grand_total = sum(score.total_score for score in scores)
     max_total = len(subjects) * 100
     percentage = (grand_total / max_total) * 100 if max_total > 0 else 0
 
-    if percentage >= 80:
-        admin_comment = "Excellent performance! Keep it up."
-    elif percentage >= 70:
-        admin_comment = "Very good! Keep striving for excellence."
-    elif percentage >= 60:
-        admin_comment = "Good performance. Could do better next term."
-    elif percentage >= 50:
-        admin_comment = "Fair result. Work harder next term."
-    elif percentage >= 40:
-        admin_comment = "Poor result. Must work hard to improve on this performance."
-    elif percentage >= 30:
-        admin_comment = "Very poor result. Must work hard to improve on this performance."
-    else:
-        admin_comment = "Advised to repeat."
+    # Fetch stored admin comment (from any subject since it’s the same for all)
+    admin_comment = scores[0].admin_comment if scores else "No scores available."
 
-    download_url = url_for('download_report', reg_num=student.reg_num)
-    print(f"Download URL: {download_url}")  # Debugging
-
-
-    return render_template('report.html', student=student, scores=scores, grand_total=grand_total, percentage=percentage, admin_comment=admin_comment, download_url=url_for('download_report', reg_num=student.reg_num))
+    return render_template('report.html', student=student, scores=scores, grand_total=grand_total, percentage=percentage, admin_comment=admin_comment)
 
 
 # Route to download report card
