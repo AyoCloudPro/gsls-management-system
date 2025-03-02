@@ -1,22 +1,20 @@
-FROM python:3.10-slim
-
-# Update and install Nginx
-RUN apt-get update && apt-get install -y nginx && rm -rf /var/lib/apt/lists/*
+# Use the official Python image from the Docker Hub
+FROM python:3.9-slim
 
 # Set the working directory
 WORKDIR /app
 
-# Copy the application code
-COPY . /app
+# Copy the requirements file into the image
+COPY requirements.txt .
 
-# Install Python dependencies
+# Install the Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the Nginx configuration file
-COPY nginx.conf /etc/nginx/nginx.conf
+# Copy the rest of the application code into the image
+COPY . .
 
-# Expose port 80
-EXPOSE 80
+# Expose the port the app runs on
+EXPOSE 8000
 
-# Start Nginx and Gunicorn
-CMD ["sh", "-c", "service nginx start && gunicorn -w 4 -b 0.0.0.0:8080 app:app"]
+# Command to run the application
+CMD ["python", "app.py"]
