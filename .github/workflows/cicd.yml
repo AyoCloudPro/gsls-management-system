@@ -49,9 +49,9 @@ jobs:
 
     - name: Deploy to server
       env:
-        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        PRIVATE_SSH_KEY: ${{ secrets.PRIVATE_SSH_KEY }}
       run: |
         mkdir -p ~/.ssh
-        echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+        echo "$PRIVATE_SSH_KEY" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         ssh -i ~/.ssh/id_rsa ay@gslsportal.com 'docker pull ${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest && docker stop app && docker rm app && docker run -d --name app -p 80:80 ${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest'
