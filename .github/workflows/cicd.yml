@@ -41,6 +41,8 @@ jobs:
           username: ${{ secrets.GCP_VM_USER }}
           key: ${{ secrets.PRIVATE_SSH_KEY }}
           script: |
+            echo "SSH connection successful!"
+            debug: true
             # Pull latest image
             docker pull ${{ secrets.DOCKER_USERNAME }}/my-app:latest
             
