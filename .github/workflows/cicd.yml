@@ -1,80 +1,52 @@
-name: Build and Deploy
+name: Build, Push, and Deploy to GCP VM
 
 on:
   push:
+r
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Login to Docker Hub
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub using Token
         uses: docker/login-action@v3
         with:
-          username: ${{ vars.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}  # Using token instead of password
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Build and push image
-        uses: docker/build-push-action@v6
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ vars.DOCKERHUB_USERNAME }}/gsls_management_system:latest
-
+          tags: ${{ secrets.DOCKER_USERNAME }}/my-app:latest
 
   deploy:
-    runs-on: ubuntu-latest
     needs: build-and-push
+    runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: SSH into GCP VM and Deploy Container
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.GCP_VM_USER }}
+          key: ${{ secrets.PRIVATE_SSH_KEY }}
+          script: |
+            # Pull latest image
+            docker pull ${{ secrets.DOCKER_USERNAME }}/my-app:latest
+            
+            # Stop and remove old container (if exists)
+            docker stop my-app || true
+            docker rm my-app || true
 
-      - name: Set up SSH Agent
-        run: |
-          echo "${{ secrets.PRIVATE_SSH_KEY }}" > key
-          chmod 400 key
-          ssh -v -o StrictHostKeyChecking=no -i key ${{ secrets.USERNAME }}@${{ secrets.SERVER_IP }} << 'EOF'
-            docker pull ${{ vars.DOCKERHUB_USERNAME }}/gsls_management_system:latest
-            docker stop gsls_management_system || true
-            docker rm gsls_management_system || true
-            docker run -d -p 8080:80 --restart=always --name gsls_management_system ${{ vars.DOCKERHUB_USERNAME }}/gsls_management_system:latest
-            docker ps
-          EOF
-
-      - name: Set Up Reverse Proxy and SSL
-        run: |
-          ssh -o StrictHostKeyChecking=no -i key ${{ secrets.USERNAME }}@${{ secrets.SERVER_IP }} << 'EOF'
-            sudo apt update
-            sudo apt install -y nginx certbot python3-certbot-nginx
-
-            cat << NGINX_CONF | sudo tee /etc/nginx/sites-available/gsls_management_system
-            server {
-                listen 80;
-                server_name gslsportal.com www.gslsportal.com;
-
-                location / {
-                    proxy_pass http://127.0.0.1:8080;
-                    proxy_set_header Host \$host;
-                    proxy_set_header X-Real-IP \$remote_addr;
-                }
-            }
-            NGINX_CONF
-
-            sudo ln -sf /etc/nginx/sites-available/gsls_management_system /etc/nginx/sites-enabled/
-            sudo certbot --nginx --non-interactive --agree-tos --redirect \
-              -m ayomideolalere374@gmail.com -d gslsportal.com -d www.gslsportal.com
-            sudo nginx -t && sudo systemctl reload nginx
-            echo "0 3 * * * root certbot renew --quiet && systemctl reload nginx" | sudo tee -a /etc/crontab
-          EOF
-
-      - name: Check Container Logs
-        run: |
-          ssh -o StrictHostKeyChecking=no -i key ${{ secrets.USERNAME }}@${{ secrets.SERVER_IP }} "docker logs gsls_management_system"
-
-          
+            # Run new container
+            docker run -d --name my-app -p 8080:80 ${{ secrets.DOCKER_USERNAME }}/my-app:latest
