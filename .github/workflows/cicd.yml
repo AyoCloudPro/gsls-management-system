@@ -34,9 +34,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: SSH into GCP VM and Deploy Container
         uses: appleboy/ssh-action@v1.0.3
         with:
