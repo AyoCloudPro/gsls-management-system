@@ -34,7 +34,7 @@ jobs:
       run: |
         echo "$PRIVATE_SSH_KEY" > key
         chmod 600 key
-        ssh -o StrictHostKeyChecking=no -i key user@host << EOF
+        ssh -o StrictHostKeyChecking=no -i key ay@gslsportal.com << 'EOF'
           # Pull the latest Docker image
           docker pull ayocloudpro/gsls_management_system:latest
 
@@ -45,31 +45,15 @@ jobs:
           # Run the new container
           docker run -d -p 8080:80 --restart=always --name gsls_management_system ayocloudpro/gsls_management_system:latest
 
-          # Install Nginx
+          # Install Nginx and Certbot
           sudo apt-get update
-          sudo apt-get install -y nginx
+          sudo apt-get install -y nginx certbot python3-certbot-nginx
 
-          # Configure Nginx for reverse proxy and SSL
+          # Configure Nginx for reverse proxy
           sudo tee /etc/nginx/sites-available/default > /dev/null << 'NGINX_CONF'
           server {
               listen 80;
-              gslsportal.com gslsportal.com;
-
-              location / {
-                  proxy_pass http://localhost:8080;
-                  proxy_set_header Host $host;
-                  proxy_set_header X-Real-IP $remote_addr;
-                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                  proxy_set_header X-Forwarded-Proto $scheme;
-              }
-          }
-
-          server {
-              listen 443 ssl;
-              gslsportal.com gslsportal.com www.gslsportal.com;
-
-              ssl_certificate /etc/ssl/certs/your_certificate.crt;
-              ssl_certificate_key /etc/ssl/private/your_private_key.key;
+              server_name gslsportal.com www.gslsportal.com;
 
               location / {
                   proxy_pass http://localhost:8080;
@@ -81,6 +65,12 @@ jobs:
           }
           NGINX_CONF
 
-          # Restart Nginx to apply the changes
+          # Restart Nginx to apply changes
           sudo systemctl restart nginx
+
+          # Obtain SSL certificate from Let's Encrypt
+          sudo certbot --nginx -d gslsportal.com -d www.gslsportal.com --non-interactive --agree-tos --email ayomideolalere374@gmail.com
+
+          # Reload Nginx to apply the SSL certificate
+          sudo systemctl reload nginx
         EOF
