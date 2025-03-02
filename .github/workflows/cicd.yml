@@ -2,7 +2,7 @@ name: Build, Push, and Deploy to GCP VM
 
 on:
   push:
-r
+
 
 jobs:
   build-and-push:
