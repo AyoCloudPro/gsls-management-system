@@ -17,7 +17,7 @@ jobs:
       uses: docker/setup-buildx-action@v1
 
     - name: Cache Docker layers
-      uses: actions/cache@v3
+      uses: actions/cache@v2
       with:
         path: /tmp/.buildx-cache
         key: ${{ runner.os }}-buildx-${{ github.sha }}
@@ -42,6 +42,11 @@ jobs:
     needs: build
 
     steps:
+    - name: Add server to known hosts
+      run: |
+        mkdir -p ~/.ssh
+        ssh-keyscan -H gslsportal.com >> ~/.ssh/known_hosts
+
     - name: Deploy to server
       run: |
-        ssh ay@gslsportal.com 'docker pull ${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest && docker stop app && docker rm app && docker run -d --name app -p 80:80 ${{ secrets.DOCKERHUB_USERNAME }}/gsls-management-system:latest'
+        ssh ay@gslsportal.com 'docker pull ${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest && docker stop app && docker rm app && docker run -d --name app -p 80:80 ${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest'
