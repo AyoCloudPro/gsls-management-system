@@ -54,4 +54,9 @@ jobs:
         mkdir -p ~/.ssh
         echo "$PRIVATE_SSH_KEY" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
-        ssh -i ~/.ssh/id_rsa ay@gslsportal.com 'docker pull ${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest && docker stop app && docker rm app && docker run -d --name app -p 80:80 ${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest'
+        ssh -i ~/.ssh/id_rsa ay@gslsportal.com '
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest &&
+          (docker stop app || true) &&
+          (docker rm app || true) &&
+          docker run -d --rm --name app -p 80:80 ${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest
+        '
