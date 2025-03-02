@@ -48,5 +48,10 @@ jobs:
         ssh-keyscan -H gslsportal.com >> ~/.ssh/known_hosts
 
     - name: Deploy to server
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
       run: |
-        ssh ay@gslsportal.com 'docker pull ${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest && docker stop app && docker rm app && docker run -d --name app -p 80:80 ${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest'
+        mkdir -p ~/.ssh
+        echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh -i ~/.ssh/id_rsa ay@gslsportal.com 'docker pull ${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest && docker stop app && docker rm app && docker run -d --name app -p 80:80 ${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest'
