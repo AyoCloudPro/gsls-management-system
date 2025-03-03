@@ -19,6 +19,9 @@ COPY . .
 # Expose the port the app runs on
 EXPOSE 80
 
+# Set MySQL
+ENV SQLALCHEMY_DATABASE_URI="mysql://myuser:PAyomide03@mysql-container:3306/new_database_name"
+
 # Set environment variable for pdfkit
 ENV WKHTMLTOPDF_PATH /usr/bin/wkhtmltopdf
 # Command to run the application
