@@ -45,8 +45,8 @@ jobs:
     - name: Add server to known hosts
       run: |
         mkdir -p ~/.ssh
+        touch ~/.ssh/known_hosts  # Ensure the file exists before updating
         ssh-keygen -R gslsportal.com || true  # Remove old key (ignore errors)
-        touch ~/.ssh/known_hosts  # Ensure the file exists
         ssh-keyscan -H gslsportal.com >> ~/.ssh/known_hosts
 
     - name: Deploy to server
