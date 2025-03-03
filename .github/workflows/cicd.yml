@@ -46,6 +46,7 @@ jobs:
       run: |
         mkdir -p ~/.ssh
         ssh-keygen -R gslsportal.com || true  # Remove old key (ignore errors)
+        touch ~/.ssh/known_hosts  # Ensure the file exists
         ssh-keyscan -H gslsportal.com >> ~/.ssh/known_hosts
 
     - name: Deploy to server
