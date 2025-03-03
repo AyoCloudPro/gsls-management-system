@@ -26,7 +26,7 @@ load_dotenv()
 
 # wkhtmltopdf location
 # ==============================
-config = pdfkit.configuration(wkhtmltopdf=os.getenv("WKHTMLTOPDF_PATH"))
+config = pdfkit.configuration(wkhtmltopdf=os.getenv("WKHTMLTOPDF_PATH", "/usr/bin/wkhtmltopdf"))
 options = {
     'enable-local-file-access': None
 }
@@ -43,8 +43,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = os.getenv('SECRET_KEY')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 db = SQLAlchemy(app)
-
-
 
 
 # Student Model
@@ -99,7 +97,7 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(50), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
     VALID_ROLES = ['main_admin', 'school_admin', 'teacher']
-    role = db.Column(db.String(50), nullable=False)  # ✅ True = Developer, False = School Admin
+    role = db.Column(db.String(50), nullable=False)  # True = Developer, False = School Admin
 
     def __init__(self, username, password, role):
         if role not in self.VALID_ROLES:
@@ -119,12 +117,16 @@ class User(db.Model, UserMixin):
         return self.role in ["main_admin", "school_admin"]
 
 
+# Subject per Class module
+# ==========================
 class ClassSubject(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     student_class = db.Column(db.String(50), nullable=False)  # Example: "JSS1", "SS2"
     subject = db.Column(db.String(100), nullable=False)  # Example: "Physics", "Chemistry"
 
 
+# TO calulate percentage
+# ==========================
 def get_admin_comment(percentage):
     if percentage >= 80:
         return "Excellent performance! Keep it up."
@@ -166,13 +168,15 @@ def role_required(*required_roles):
     return decorator
 
 
-
+# To generate CSRF token
+# ===========================
 def generate_csrf_token():
     if '_csrf_token' not in session:
-        session['_csrf_token'] = os.urandom(24).hex()  # ✅ Generates a new CSRF token
+        session['_csrf_token'] = os.urandom(24).hex()  # Generates a new CSRF token
     return session['_csrf_token']
 
-app.jinja_env.globals['csrf_token'] = generate_csrf_token  # ✅ Makes the token available in all templates
+app.jinja_env.globals['csrf_token'] = generate_csrf_token  # Makes the token available in all templates
+
 
 # Login manager 
 # ======================
@@ -186,7 +190,7 @@ def load_user(user_id):
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()
-    if form.validate_on_submit():  # ✅ Flask-WTF automatically checks CSRF token
+    if form.validate_on_submit():  # Flask-WTF automatically checks CSRF token
         username = form.username.data
         password = form.password.data
         user = User.query.filter_by(username=username).first()
@@ -197,11 +201,12 @@ def login():
 
         login_user(user)
         session['user_id'] = user.id
-        session['role'] = user.role  # ✅ Store role in session
+        session['role'] = user.role  # Store role in session
 
         return redirect(url_for('dashboard'))
 
-    return render_template('login.html', form=form)  # ✅ Pass `form` to template
+    return render_template('login.html', form=form)  # Pass `form` to template
+
 
 # Logout Route
 # ======================
@@ -212,6 +217,8 @@ def logout():
     return redirect(url_for('login'))
 
 
+# Dashboard Route
+# ====================
 @app.route('/dashboard')
 @login_required
 def dashboard():
@@ -233,7 +240,8 @@ def dashboard():
     )
 
 
-
+# Debug Route
+# =====================
 @app.route('/debug_session')
 def debug_session():
     return {
@@ -243,14 +251,13 @@ def debug_session():
     }
 
 
-
 # Route to manage admins (Main Admin Only)
 # ===========================================
 @app.route('/manage_admins', methods=['GET', 'POST'])
 @login_required
 @role_required("main_admin")
 def manage_admins():
-    form = DeleteAdminForm()  # ✅ Create an instance of the form
+    form = DeleteAdminForm()  # Create an instance of the form
 
     if request.method == 'POST':
         username = request.form.get('username')
@@ -271,7 +278,7 @@ def manage_admins():
         return redirect(url_for('manage_admins'))
 
     admins = User.query.all()
-    return render_template('manage_admins.html', admins=admins, form=form)  # ✅ Pass `form` to the template
+    return render_template('manage_admins.html', admins=admins, form=form)  # Pass `form` to the template
 
 
 # Route to delete an admin (except the main admin themselves)
@@ -280,9 +287,9 @@ def manage_admins():
 @login_required
 @role_required("main_admin")
 def delete_admin(admin_id):
-    form = DeleteAdminForm()  # ✅ Initialize the Flask-WTF form
+    form = DeleteAdminForm()  # Initialize the Flask-WTF form
 
-    if form.validate_on_submit():  # ✅ Ensure CSRF protection is working
+    if form.validate_on_submit():  # Ensure CSRF protection is working
         admin = User.query.get_or_404(admin_id)
         if admin.role == "main_admin":
             flash('You cannot delete the main admin!', 'danger')
@@ -297,6 +304,8 @@ def delete_admin(admin_id):
     return redirect(url_for('manage_admins'))
 
 
+# Route to manage teachers (both admins)
+# ===============================
 @app.route('/manage_teachers', methods=['GET', 'POST'])
 @login_required
 @role_required("main_admin", "school_admin")
@@ -323,9 +332,11 @@ def manage_teachers():
     return render_template('manage_teachers.html', teachers=teachers, form=form)
 
 
+# Route to delete teachers (both admins)
+# =======================================
 @app.route('/delete_teacher/<int:teacher_id>', methods=['POST'])
 @login_required
-@role_required("main_admin", "school_admin")  # ✅ Only main admins can delete teachers
+@role_required("main_admin", "school_admin")  # Only main admins can delete teachers
 def delete_teacher(teacher_id):
     teacher = User.query.get_or_404(teacher_id)
 
@@ -342,7 +353,7 @@ def delete_teacher(teacher_id):
 @login_required
 def index():
     if not current_user.is_authenticated:
-        return redirect(url_for('login'))  # ✅ Ensure guests go to login first
+        return redirect(url_for('login'))  # Ensure guests go to login first
     students = Student.query.all()
     return render_template('index.html', students=students)
 
@@ -400,6 +411,8 @@ def delete_student(student_id):
     return redirect(url_for('index'))
 
 
+# Route to manage subjects
+# =============================
 @app.route('/manage_subjects', methods=['GET', 'POST'])
 def manage_subjects():
     # Define all classes in the correct order
@@ -433,8 +446,8 @@ def manage_subjects():
     return render_template('manage_subjects.html', classes=classes, class_subjects=class_subjects)
 
 
-
-
+# Route to remove subjects
+# =========================
 @app.route('/remove_subject/<int:mapping_id>', methods=['POST'])
 def remove_subject(mapping_id):
     subject_entry = ClassSubject.query.get(mapping_id)
@@ -442,7 +455,6 @@ def remove_subject(mapping_id):
         db.session.delete(subject_entry)
         db.session.commit()
     return redirect(url_for('manage_subjects'))
-
 
 
 # Route to enter scores
@@ -456,7 +468,7 @@ def enter_scores(student_id):
     if request.method == 'POST':
         total_score = 0  # Keep track of the total score
         max_score = len(subjects) * 100  # Maximum possible score
-        teacher_comment = request.form.get('teacher_comment', '').strip()  # ✅ Get teacher's comment
+        teacher_comment = request.form.get('teacher_comment', '').strip()  # Get teacher's comment
 
         for subject in subjects:
             first_test = int(request.form.get(f'{subject}_first_test', 0) or 0)
@@ -479,20 +491,20 @@ def enter_scores(student_id):
             score.home_assessment = home_assessment
             score.exam = exam
 
-            # ✅ Store teacher's comment for each subject
+            # Store teacher's comment for each subject
             score.teacher_comment = teacher_comment  
 
         # Calculate percentage and store admin comment
         percentage = (total_score / max_score) * 100 if max_score > 0 else 0
         admin_comment = get_admin_comment(percentage)
 
-        # ✅ Save admin comment for all subjects
+        # Save admin comment for all subjects
         for score in Score.query.filter_by(student_id=student_id).all():
             score.admin_comment = admin_comment
 
         db.session.commit()
 
-        # ✅ Redirect based on which button was clicked
+        # Redirect based on which button was clicked
         action = request.form.get("action")
         if action == "view_report":
             return redirect(url_for('view_report', student_id=student_id))
@@ -532,7 +544,7 @@ def download_report(reg_num):
 
     student = Student.query.filter_by(reg_num=reg_num).first()
     if not student:
-        print("❌ Student not found!")
+        print("Student not found!")
         return "Student not found", 404
 
     scores = Score.query.filter_by(student_id=student.id).all()
@@ -549,18 +561,18 @@ def download_report(reg_num):
 
     print(rendered)
 
-    # ✅ Ensure folder exists
+    #  Ensure folder exists
     pdf_folder = "generated_pdfs"
     if not os.path.exists(pdf_folder):
         os.makedirs(pdf_folder)
 
-    # ✅ 100% Safe Filename: Replace EVERYTHING bad
+    # 100% Safe Filename: Replace EVERYTHING bad
     safe_reg_num = re.sub(r'[^a-zA-Z0-9_-]', '-', reg_num)  # Only allow letters, numbers, _ and -
 
-    # ✅ Print new filename for debugging
+    #Print new filename for debugging
     print(f"Safe filename: {safe_reg_num}")
 
-    # ✅ Now use the "safe" registration number for file names
+    # Now use the "safe" registration number for file names
     html_path = os.path.join(pdf_folder, f"report_{safe_reg_num}.html")
     pdf_path = os.path.join(pdf_folder, f"report_{safe_reg_num}.pdf")
 
@@ -576,15 +588,15 @@ def download_report(reg_num):
         'load-error-handling': 'ignore'
     }
 
-    # ✅ Print command before running pdfkit
+    # Print command before running pdfkit
     print(f"Running wkhtmltopdf to generate: {html_path}")
 
     try:
         # Convert the saved HTML file to a PDF
         pdfkit.from_file(html_path, pdf_path, configuration=config, options=options)
-        print(f"✅ PDF successfully generated: {pdf_path}")
+        print(f"PDF successfully generated: {pdf_path}")
     except Exception as e:
-        print(f"❌ PDF generation failed: {e}")  # Print error
+        print(f"PDF generation failed: {e}")  # Print error
         return f"PDF generation failed: {e}", 500
 
     return send_file(pdf_path, as_attachment=True)
