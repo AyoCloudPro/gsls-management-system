@@ -45,6 +45,7 @@ jobs:
     - name: Add server to known hosts
       run: |
         mkdir -p ~/.ssh
+        ssh-keygen -R gslsportal.com || true  # Remove old key (ignore errors)
         ssh-keyscan -H gslsportal.com >> ~/.ssh/known_hosts
 
     - name: Deploy to server
