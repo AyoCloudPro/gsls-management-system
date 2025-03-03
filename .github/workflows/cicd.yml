@@ -60,3 +60,17 @@ jobs:
           (docker rm app || true) &&
           docker run -d --rm --name app -p 8080:80 ${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest
         '
+
+    - name: Install Certbot and Obtain SSL Certificate
+      run: |
+        ssh -i ~/.ssh/id_rsa ay@gslsportal.com '
+          sudo apt-get update &&
+          sudo apt-get install -y certbot python3-certbot-nginx &&
+          sudo certbot --nginx -d gslsportal.com -d www.gslsportal.com --non-interactive --agree-tos --email ayomideolalere374@gmail.com
+        '
+
+    - name: Reload Nginx to Apply SSL Certificate
+      run: |
+        ssh -i ~/.ssh/id_rsa ay@gslsportal.com '
+          sudo systemctl reload nginx
+        '
