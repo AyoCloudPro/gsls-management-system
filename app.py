@@ -623,4 +623,4 @@ def static_files(filename):
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    gunicorn -w 4 -b 0.0.0.0:5000 app:app
+    gunicorn -w 4 -b 0.0.0.0:8080 app:app
