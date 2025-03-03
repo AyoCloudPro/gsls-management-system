@@ -24,6 +24,16 @@ import os
 load_dotenv()  
 
 
+# Get values from environment variables
+# =======================================
+db_user = os.getenv("MYSQL_USER")
+db_password = os.getenv("MYSQL_PASSWORD")
+db_host = os.getenv("MYSQL_HOST")
+db_port = os.getenv("MYSQL_PORT")
+db_name = os.getenv("MYSQL_DATABASE")
+
+SQLALCHEMY_DATABASE_URI = f"mysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+
 # wkhtmltopdf location
 # ==============================
 config = pdfkit.configuration(wkhtmltopdf=os.getenv("WKHTMLTOPDF_PATH", "/usr/bin/wkhtmltopdf"))

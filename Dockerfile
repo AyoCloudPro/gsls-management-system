@@ -20,7 +20,13 @@ COPY . .
 EXPOSE 80
 
 # Set MySQL
-ENV SQLALCHEMY_DATABASE_URI="mysql://myuser:PAyomide03@mysql-container:3306/new_database_name"
+# Set environment variables inside the container
+ENV MYSQL_USER=${MYSQL_USER}
+ENV MYSQL_PASSWORD=${MYSQL_PASSWORD}
+ENV MYSQL_HOST=${MYSQL_HOST}
+ENV MYSQL_PORT=${MYSQL_PORT}
+ENV MYSQL_DATABASE=${MYSQL_DATABASE}
+
 
 # Set environment variable for pdfkit
 ENV WKHTMLTOPDF_PATH /usr/bin/wkhtmltopdf
