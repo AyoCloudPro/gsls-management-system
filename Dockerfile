@@ -20,7 +20,6 @@ COPY . .
 EXPOSE 80
 
 # Set environment variable for pdfkit
-ENV WKHTMLTOPDF_PATH C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe
-
+ENV WKHTMLTOPDF_PATH /usr/bin/wkhtmltopdf
 # Command to run the application
 CMD ["python", "app.py"]
