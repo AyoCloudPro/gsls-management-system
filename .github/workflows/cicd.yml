@@ -65,7 +65,6 @@ jobs:
             echo "Docker is already installed."
           fi
         '
-
     - name: Deploy to Server
       env:
         PRIVATE_SSH_KEY: ${{ secrets.PRIVATE_SSH_KEY }}
@@ -73,32 +72,31 @@ jobs:
         mkdir -p ~/.ssh
         echo "$PRIVATE_SSH_KEY" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
-
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ay@${{ secrets.SERVER_IP }} "
+        ssh -i ~/.ssh/id_rsa ay@${{ secrets.SERVER_IP }} "
           # Pull the latest Flask app image
-          docker pull '${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest'
-          
-          # Ensure MySQL is running
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest
+
+          # Start MySQL if it's not running
           if ! docker ps | grep -q mysql-container; then
             echo 'Starting MySQL container...'
             docker run -d --name mysql-container \
-              -e MYSQL_ROOT_PASSWORD='${{ secrets.MYSQL_PASSWORD }}' \
-              -e MYSQL_DATABASE='your_database_name' \
-              -p 3306:3306 mysql:5.7
+              -e MYSQL_ROOT_PASSWORD=\"$MYSQL_PASSWORD\" \
+              -e MYSQL_DATABASE=your_database_name \
+              -p 3306:3306 mysql
           else
             echo 'MySQL is already running'
           fi
 
           # Stop and remove old Flask app container if running
-          docker stop app || true
-          docker rm app || true
+          (docker stop app || true) &&
+          (docker rm app || true)
 
-          # Run the Flask app with `entrypoint.sh`
+          # Run the Flask app and link it to MySQL
           docker run -d --name app \
             --link mysql-container:mysql \
             -e SECRET_KEY=\"$SECRET_KEY\" \
             -e DATABASE_URL=\"mysql+pymysql://root:$MYSQL_PASSWORD@mysql:3306/your_database_name\" \
-            -p 8080:8080 '${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest'
+            -p 8080:8080 ${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest
         "
 
     - name: Ensure Nginx is Installed and Restart It (If Needed)
