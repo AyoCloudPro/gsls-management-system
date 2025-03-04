@@ -21,4 +21,4 @@ EXPOSE 8080
 ENV WKHTMLTOPDF_PATH /usr/bin/wkhtmltopdf
 
 # Command to run the application
-CMD ["python", "app.py"]
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8080", "app:app"]
