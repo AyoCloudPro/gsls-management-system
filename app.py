@@ -15,6 +15,7 @@ from flask_wtf.csrf import CSRFProtect
 from forms import DeleteAdminForm
 from forms import AddTeacherForm
 from forms import LoginForm
+from flask_migrate import Migrate
 
 import os
 
@@ -53,6 +54,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = os.getenv('SECRET_KEY')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///default.db')
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
 
 # Student Model
@@ -622,5 +624,5 @@ def static_files(filename):
 
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()
-    gunicorn -w 4 -b 0.0.0.0:8080 app:app
+        db.create_all()  # Ensure tables exist before running
+    app.run(host="0.0.0.0", port=8080, debug=True)
