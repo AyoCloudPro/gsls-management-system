@@ -72,7 +72,11 @@ jobs:
           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest &&
           (docker stop app || true) &&
           (docker rm app || true) &&
-          docker run -d --name app -e MYSQL_USER=${{ secrets.MYSQL_USER }} -e MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }} -p 8080:8080 ${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest
+          docker run -d --name app \
+            -e MYSQL_USER=${{ secrets.MYSQL_USER }} \
+            -e MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }} \
+            -e SECRET_KEY=${{ secrets.SECRET_KEY }} \
+            -p 8080:8080 ${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest
         "
 
     - name: Ensure Nginx is Installed and Restart It (If Needed)
