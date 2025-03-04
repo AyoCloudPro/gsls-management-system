@@ -46,7 +46,15 @@ jobs:
       run: |
         mkdir -p ~/.ssh
         touch ~/.ssh/known_hosts  # Ensure the file exists before updating
-        ssh-keygen -R gslsportal.com || true  # Remove old key (ignore errors)
+        ssh-keygen -R gslsportal.comThe failure in the deploy job is due to the `ssh-keyscan || true  # Remove old key (ignore errors)
+        ping` command not finding the host `gslsportal.com`. -c 4 gslsportal.com  # Add this line for testing connectivity This issue can occur if the DNS resolution fails or the host is temporarily unreachable.
+
+        ssh-keyscan -H gslsportal.com >> ~/.To handle this, we can add a retry mechanism for thessh/known_hosts
+
+    - name: Reset SSH Known Hosts
+      run: |
+        mkdir -p ~/.ssh
+        ssh-keygen -R gslsportal.com || true
         ssh-keyscan -H gslsportal.com >> ~/.ssh/known_hosts
 
     - name: Deploy to server
