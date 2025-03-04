@@ -96,8 +96,8 @@ jobs:
           # Run the Flask app with `entrypoint.sh`
           docker run -d --name app \
             --link mysql-container:mysql \
-            -e SECRET_KEY='${{ secrets.SECRET_KEY }}' \
-            -e DATABASE_URL='mysql+pymysql://root:${{ secrets.MYSQL_PASSWORD }}@mysql:3306/your_database_name' \
+            -e SECRET_KEY=\"$SECRET_KEY\" \
+            -e DATABASE_URL=\"mysql+pymysql://root:$MYSQL_PASSWORD@mysql:3306/your_database_name\" \
             -p 8080:8080 '${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest'
         "
 
