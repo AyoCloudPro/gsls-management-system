@@ -1,12 +1,10 @@
 #!/bin/sh
-echo "Waiting for MySQL to start..."
-while ! nc -z mysql-container 3306; do
-  sleep 1
-done
-echo "MySQL is up! Starting Flask..."
+echo "🔍 Checking Environment Variables..."
+echo "SECRET_KEY: $SECRET_KEY"
+echo "DATABASE_URL: $DATABASE_URL"
 
-# Apply migrations
+echo "⏳ Running Migrations..."
 flask db upgrade
 
-# Start Gunicorn
+echo "🚀 Starting Flask App..."
 exec gunicorn -w 4 -b 0.0.0.0:8080 app:app
