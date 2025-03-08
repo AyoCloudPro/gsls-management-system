@@ -72,19 +72,19 @@ jobs:
         mkdir -p ~/.ssh
         echo "$PRIVATE_SSH_KEY" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
-        ssh -i ~/.ssh/id_rsa ay@${{ secrets.SERVER_IP }} "
+        ssh -i ~/.ssh/id_rsa ay@${{ secrets.SERVER_IP }} << 'EOF'
           # Pull the latest Flask app image
           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest
 
           # Start MySQL if it's not running
           if ! docker ps | grep -q mysql-container; then
-            echo 'Starting MySQL container...'
+            echo "Starting MySQL container..."
             docker run -d --name mysql-container \
-              -e MYSQL_ROOT_PASSWORD=\"$MYSQL_PASSWORD\" \
-              -e MYSQL_DATABASE=your_database_name \
+              -e MYSQL_PASSWORD="$MYSQL_PASSWORD" \
+              -e MYSQL_DATABASE="$MYSQL_DATABASE" \
               -p 3306:3306 mysql
           else
-            echo 'MySQL is already running'
+            echo "MySQL is already running"
           fi
 
           # Stop and remove old Flask app container if running
@@ -98,6 +98,7 @@ jobs:
             -e DATABASE_URL="mysql+pymysql://$MYSQL_USER:$MYSQL_PASSWORD@mysql:3306/$MYSQL_DATABASE" \
             -e WKHTMLTOPDF_PATH="$WKHTMLTOPDF_PATH" \
             -p 8080:8080 ${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest
+        EOF
 
     - name: Ensure Nginx is Installed and Restart It (If Needed)
       run: |
