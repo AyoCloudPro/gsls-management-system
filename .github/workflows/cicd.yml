@@ -51,9 +51,14 @@ jobs:
 
     steps:
     - name: Set up SSH Access
+      env:
+        PRIVATE_SSH_KEY: ${{ secrets.PRIVATE_SSH_KEY }}
       run: |
         mkdir -p ~/.ssh
-        echo "${{ secrets.PRIVATE_SSH_KEY }}" | tr -d '\r' | ssh-add - > /dev/null
+        echo "$PRIVATE_SSH_KEY" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        eval "$(ssh-agent -s)"  
+        ssh-add ~/.ssh/id_rsa  
         ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
 
     - name: Ensure Docker is Installed
