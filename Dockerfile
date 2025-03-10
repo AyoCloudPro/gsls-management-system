@@ -4,7 +4,9 @@ FROM python:3.9 AS builder
 WORKDIR /app
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y wkhtmltopdf
+RUN apt-get update && apt-get install -y \
+    wkhtmltopdf \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install dependencies in a virtual environment
 RUN python -m venv /opt/venv
