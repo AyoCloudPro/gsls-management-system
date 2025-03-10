@@ -79,9 +79,11 @@ jobs:
         MYSQL_USER: ${{ secrets.MYSQL_USER }}
         MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
         MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+        MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
         SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
       run: |
-        ssh -o SendEnv=MYSQL_USER -o SendEnv=MYSQL_PASSWORD -o SendEnv=MYSQL_DATABASE -o SendEnv=SECRET_KEY \
+        ssh -o SendEnv=MYSQL_USER -o SendEnv=MYSQL_PASSWORD -o SendEnv=MYSQL_DATABASE -o SendEnv=MYSQL_ROOT_PASSWORD -o SendEnv=SECRET_KEY -o SendEnv=ADMIN_PASSWORD \
         ay@${{ secrets.SERVER_IP }} << 'EOF'
           # Pull the latest Docker image
           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest
@@ -90,7 +92,9 @@ jobs:
           if ! docker ps | grep -q mysql-container; then
             echo "Starting MySQL container..."
             docker run -d --name mysql-container \
-              -e MYSQL_ROOT_PASSWORD="$MYSQL_PASSWORD" \
+              -e MYSQL_ROOT_PASSWORD="$MYSQL_ROOT_PASSWORD" \  # Fix for missing root password
+              -e MYSQL_USER="$MYSQL_USER" \
+              -e MYSQL_PASSWORD="$MYSQL_PASSWORD" \
               -e MYSQL_DATABASE="$MYSQL_DATABASE" \
               -p 3306:3306 \
               mysql
@@ -102,10 +106,11 @@ jobs:
           docker stop app || true
           docker rm app || true
 
-          # Run the Flask app (without WKHTMLTOPDF_PATH)
+          # Run the Flask app with the correct environment variables
           docker run -d --name app \
             --link mysql-container:mysql \
             -e SECRET_KEY="$SECRET_KEY" \
+            -e ADMIN_PASSWORD="$ADMIN_PASSWORD" \  # Fix for missing admin password
             -e DATABASE_URL="mysql+pymysql://$MYSQL_USER:$MYSQL_PASSWORD@mysql:3306/$MYSQL_DATABASE" \
             -p 8080:8080 ${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest
         EOF
