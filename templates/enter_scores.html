@@ -97,6 +97,7 @@
     <div class="container">
         <h2>Enter Scores for {{ student.name }}</h2>
         <form method="post">
+            {{ form.hidden_tag() }}
             <table>
                 <tr>
                     <th>Subject</th>
@@ -109,25 +110,25 @@
                 {% for subject in subjects %}
                 <tr>
                     <td><strong>{{ subject }}</strong></td>
-                    <td><input type="number" name="{{ subject }}_first_test" value="{{ scores.get(subject, {}).first_test or '' }}" min="0" max="20"></td>
-                    <td><input type="number" name="{{ subject }}_second_test" value="{{ scores.get(subject, {}).second_test or '' }}" min="0" max="20"></td>
-                    <td><input type="number" name="{{ subject }}_class_assessment" value="{{ scores.get(subject, {}).class_assessment or '' }}" min="0" max="5"></td>
-                    <td><input type="number" name="{{ subject }}_home_assessment" value="{{ scores.get(subject, {}).home_assessment or '' }}" min="0" max="5"></td>
-                    <td><input type="number" name="{{ subject }}_exam" value="{{ scores.get(subject, {}).exam or '' }}" min="0" max="50"></td>
+                    <td>{{ form[subject ~ "_first_test"](min=0, max=20) }}</td>
+                    <td>{{ form[subject ~ "_second_test"](min=0, max=20) }}</td>
+                    <td>{{ form[subject ~ "_class_assessment"](min=0, max=5) }}</td>
+                    <td>{{ form[subject ~ "_home_assessment"](min=0, max=5) }}</td>
+                    <td>{{ form[subject ~ "_exam"](min=0, max=50) }}</td>
                 </tr>
                 {% endfor %}
             </table>
             <br>
             <label for="teacher_comment"><strong>Teacher's Comment:</strong></label>
-            <textarea name="teacher_comment" id="teacher_comment" rows="4" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">{{ student.teacher_comment or '' }}</textarea>
-            <br><br>
-            <br>
-            <label for="teacher_name"><strong>Teacher's Name:</strong></label>
-            <input type="text" name="teacher_name" id="teacher_name" value="{{ teacher_name or '' }}" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
+            {{ form.teacher_comment(rows=4, style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;") }}
             <br><br>
 
-            <button type="submit" name="action" value="save">Save Scores</button>
-            <button type="submit" name="action" value="view_report">View Report</button>
+            <label for="teacher_name"><strong>Teacher's Name:</strong></label>
+            {{ form.teacher_name(style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;") }}
+            <br><br>
+
+            {{ form.submit_save() }}
+            {{ form.submit_view() }}
         </form>
         <a href="{{ url_for('index') }}" class="back-link">← Back to Student List</a>
     </div>

@@ -24,6 +24,14 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-buildx-
 
+    - name: Cache Docker layers
+      uses: actions/cache@v3
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-docker-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-docker-
+
     - name: Log in to Docker Hub
       uses: docker/login-action@v1
       with:
@@ -43,55 +51,49 @@ jobs:
 
     steps:
     - name: Set up SSH Access
-      env:
-        PRIVATE_SSH_KEY: ${{ secrets.PRIVATE_SSH_KEY }}
       run: |
         mkdir -p ~/.ssh
-        echo "$PRIVATE_SSH_KEY" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H ${{ secrets.SERVER_IP }} > ~/.ssh/known_hosts
+        echo "${{ secrets.PRIVATE_SSH_KEY }}" | tr -d '\r' | ssh-add - > /dev/null
+        ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
 
     - name: Ensure Docker is Installed
       run: |
         ssh -i ~/.ssh/id_rsa ay@${{ secrets.SERVER_IP }} '
-          if ! command -v docker &> /dev/null
-          then
-            echo "Docker not found. Installing..."
-            sudo apt update
-            sudo apt install -y docker.io
-            sudo usermod -aG docker $USER
-            newgrp docker
-          else
-            echo "Docker is already installed."
+          if ! systemctl is-active --quiet docker; then
+            echo "Docker is not running. Starting..."
+            sudo systemctl start docker
           fi
         '
     - name: Deploy to Server
       env:
-        PRIVATE_SSH_KEY: ${{ secrets.PRIVATE_SSH_KEY }}
+        MYSQL_USER: ${{ secrets.MYSQL_USER }}
+        MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+        MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+        SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        WKHTMLTOPDF_PATH: ${{ secrets.WKHTMLTOPDF_PATH }}
       run: |
-        mkdir -p ~/.ssh
-        echo "$PRIVATE_SSH_KEY" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh -i ~/.ssh/id_rsa ay@${{ secrets.SERVER_IP }} << 'EOF'
-          # Pull the latest Flask app image
+        ssh -o SendEnv=MYSQL_USER -o SendEnv=MYSQL_PASSWORD -o SendEnv=MYSQL_DATABASE -o SendEnv=SECRET_KEY -o SendEnv=WKHTMLTOPDF_PATH \
+        ay@${{ secrets.SERVER_IP }} << 'EOF'
+          # Pull the latest Docker image
           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest
 
           # Start MySQL if it's not running
           if ! docker ps | grep -q mysql-container; then
             echo "Starting MySQL container..."
             docker run -d --name mysql-container \
-              -e MYSQL_PASSWORD="$MYSQL_PASSWORD" \
+              -e MYSQL_ROOT_PASSWORD="$MYSQL_PASSWORD" \
               -e MYSQL_DATABASE="$MYSQL_DATABASE" \
-              -p 3306:3306 mysql
+              -p 3306:3306 \
+              mysql
           else
-            echo "MySQL is already running"
+            echo "MySQL is already running."
           fi
 
-          # Stop and remove old Flask app container if running
-          (docker stop app || true) &&
-          (docker rm app || true)
+          # Stop and remove old Flask app container
+          docker stop app || true
+          docker rm app || true
 
-          # Run the Flask app and link it to MySQL
+          # Run the Flask app
           docker run -d --name app \
             --link mysql-container:mysql \
             -e SECRET_KEY="$SECRET_KEY" \
@@ -114,7 +116,7 @@ jobs:
         ssh -i ~/.ssh/id_rsa ay@${{ secrets.SERVER_IP }} "
           sudo apt-get update &&
           sudo apt-get install -y certbot python3-certbot-nginx &&
-          sudo certbot --nginx -d gslsportal.com -d www.gslsportal.com --non-interactive --agree-tos --email ayomideolalere374@gmail.com
+          sudo certbot renew --quiet || sudo certbot --nginx -d gslsportal.com -d www.gslsportal.com --non-interactive --agree-tos --email your@email.com
         "
 
     - name: Reload Nginx to Apply SSL Certificate

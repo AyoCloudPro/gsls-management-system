@@ -14,41 +14,26 @@
     <div class="container">
         <h2>Add Student</h2>
         <form method="post" action="{{ url_for('add_student') }}">
-            <label for="name">Name:</label>
-            <input type="text" id="name" name="name" required>
-            
-            <label for="reg_num">Registration Number:</label>
-            <input type="text" id="reg_num" name="reg_num" required>
-            
-            <label for="student_class">Class:</label>
-            <select id="student_class" name="student_class" required>
-                <option value="" disabled selected>Select Class</option>
-                <option value="Pre School" {% if student.student_class == "Pre School" %}selected{% endif %}>Pre School</option>
-                <option value="Pre School 2" {% if student.student_class == "Pre School 2" %}selected{% endif %}>Pre School 2</option>
-                <option value="Level 1" {% if student.student_class == "Level 1" %}selected{% endif %}>Level 1</option>
-                <option value="Level 2" {% if student.student_class == "Level 2" %}selected{% endif %}>Level 2</option>
-                <option value="Level 3" {% if student.student_class == "Level 3" %}selected{% endif %}>Level 3</option>
-                <option value="Primary 1" {% if student.student_class == "Primary 1" %}selected{% endif %}>Primary 1</option>
-                <option value="Primary 2" {% if student.student_class == "Primary 2" %}selected{% endif %}>Primary 2</option>
-                <option value="Primary 3" {% if student.student_class == "Primary 3" %}selected{% endif %}>Primary 3</option>
-                <option value="Primary 4" {% if student.student_class == "Primary 4" %}selected{% endif %}>Primary 4</option>
-                <option value="Primary 5" {% if student.student_class == "Primary 5" %}selected{% endif %}>Primary 5</option>
-                <option value="JSS 1" {% if student.student_class == "JSS 1" %}selected{% endif %}>JSS 1</option>
-                <option value="JSS 2" {% if student.student_class == "JSS 2" %}selected{% endif %}>JSS 2</option>
-            </select>
-            
-            <label for="age">Age:</label>
-            <input type="number" id="age" name="age" required>
-            
-            <label for="gender">Gender:</label>
-            <select id="gender" name="gender" required>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-            </select>
-            
-            <label for="attendance">Attendance:</label>
-            <input type="text" id="attendance" name="attendance" required>
-            
+            {{ form.hidden_tag() }}  <!-- CSRF protection -->
+
+            <label>{{ form.name.label }}</label>
+            {{ form.name(class="form-control", required=True) }}
+
+            <label>{{ form.reg_num.label }}</label>
+            {{ form.reg_num(class="form-control", required=True) }}
+
+            <label>{{ form.student_class.label }}</label>
+            {{ form.student_class(class="form-control", required=True) }}
+
+            <label>{{ form.age.label }}</label>
+            {{ form.age(class="form-control", type="number", required=True) }}
+
+            <label>{{ form.gender.label }}</label>
+            {{ form.gender(class="form-control", required=True) }}
+
+            <label>{{ form.attendance.label }}</label>
+            {{ form.attendance(class="form-control", required=True) }}
+
             <button type="submit">Add Student</button>
         </form>
         <br>

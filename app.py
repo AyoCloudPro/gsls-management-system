@@ -12,9 +12,7 @@ from flask_login import LoginManager
 from flask_login import login_required, current_user, UserMixin, logout_user, login_user
 from dotenv import load_dotenv
 from flask_wtf.csrf import CSRFProtect
-from forms import DeleteAdminForm
-from forms import AddTeacherForm
-from forms import LoginForm
+from forms import DeleteAdminForm, AddTeacherForm, LoginForm, StudentForm, EditStudentForm, EnterScoresForm, ManageSubjectsForm, RemoveSubjectForm
 from flask_migrate import Migrate
 
 import os
@@ -22,8 +20,21 @@ import os
 
 # Load .env file
 # ====================
-load_dotenv()  
+load_dotenv()
 
+# Manually set the path to wkhtmltopdf
+WKHTMLTOPDF_PATH = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
+
+# Ensure Flask uses this path
+config = pdfkit.configuration(wkhtmltopdf=WKHTMLTOPDF_PATH)
+
+# Example usage
+pdfkit.from_string("Hello, Flask!", "flask_test.pdf", configuration=config)
+
+
+admin_password = os.getenv("admin_password")
+hashed_password = generate_password_hash(admin_password)
+print("Hashed Password:", hashed_password)
 
 # Get values from environment variables
 # =======================================
@@ -35,12 +46,6 @@ db_name = os.getenv("MYSQL_DATABASE")
 
 SQLALCHEMY_DATABASE_URI = f"mysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
 
-# wkhtmltopdf location
-# ==============================
-config = pdfkit.configuration(wkhtmltopdf=os.getenv("WKHTMLTOPDF_PATH", "/usr/bin/wkhtmltopdf"))
-options = {
-    'enable-local-file-access': None
-}
 
 
 # App config
@@ -206,6 +211,7 @@ def login():
         username = form.username.data
         password = form.password.data
         user = User.query.filter_by(username=username).first()
+        print(request.form)
 
         if not user or not user.check_password(password):
             flash('Invalid credentials.', 'danger')
@@ -375,20 +381,24 @@ def index():
 @app.route('/add_student', methods=['GET', 'POST'])
 @login_required
 def add_student():
-    if request.method == 'POST':
-        name = request.form['name']
-        reg_num = request.form['reg_num']
-        student_class = request.form['student_class']
-        age = request.form['age']
-        gender = request.form['gender']
-        attendance = request.form['attendance']
+    form = StudentForm()
 
-        new_student = Student(name=name, reg_num=reg_num, student_class=student_class, age=age, gender=gender, attendance=attendance)
+    if form.validate_on_submit():
+        new_student = Student(
+            name=form.name.data,
+            reg_num=form.reg_num.data,
+            student_class=form.student_class.data,
+            age=form.age.data,
+            gender=form.gender.data,
+            attendance=form.attendance.data
+        )
+
         db.session.add(new_student)
         db.session.commit()
+        flash("Student added successfully!", "success") 
         return redirect(url_for('index'))
 
-    return render_template('add_student.html', student={})
+    return render_template('add_student.html', form=form)
 
 
 # Route to edit students
@@ -397,18 +407,20 @@ def add_student():
 @login_required
 def edit_student(student_id):
     student = Student.query.get_or_404(student_id)
-    if request.method == 'POST':
-        student.name = request.form['name']
-        student.reg_num = request.form['reg_num']
-        student.student_class = request.form['student_class']
-        student.age = request.form['age']
-        student.gender = request.form['gender']
-        student.attendance = request.form['attendance']
+    form = EditStudentForm(obj=student)  # Pre-populate the form with student data
+
+    if form.validate_on_submit():
+        student.name = form.name.data
+        student.reg_num = form.reg_num.data
+        student.student_class = form.student_class.data
+        student.age = form.age.data
+        student.gender = form.gender.data
+        student.attendance = form.attendance.data
 
         db.session.commit()
         return redirect(url_for('index'))
 
-    return render_template('edit_student.html', student=student)
+    return render_template('edit_student.html', student=student, form=form)
 
 
 # Route to delete students
@@ -427,7 +439,6 @@ def delete_student(student_id):
 # =============================
 @app.route('/manage_subjects', methods=['GET', 'POST'])
 def manage_subjects():
-    # Define all classes in the correct order
     ordered_classes = [
         "Pre School", "Pre School 2",
         "Level 1", "Level 2", "Level 3",
@@ -435,18 +446,17 @@ def manage_subjects():
         "JSS 1", "JSS 2"
     ]
 
-    # Fetch existing classes in the database
     existing_classes = [cs.student_class for cs in ClassSubject.query.distinct(ClassSubject.student_class)]
-
-    # Remove duplicates but maintain the custom order
     classes = [cls for cls in ordered_classes if cls in existing_classes or cls in ordered_classes]
 
-    # Fetch subjects for each class
+    form = ManageSubjectsForm()
+    form.class_name.choices = [(cls, cls) for cls in classes]
+
     class_subjects = {class_name: ClassSubject.query.filter_by(student_class=class_name).all() for class_name in classes}
 
-    if request.method == 'POST':
-        class_name = request.form['class_name']
-        subject = request.form['subject']
+    if form.validate_on_submit():
+        class_name = form.class_name.data
+        subject = form.subject.data
 
         if not ClassSubject.query.filter_by(student_class=class_name, subject=subject).first():
             new_subject = ClassSubject(student_class=class_name, subject=subject)
@@ -455,17 +465,17 @@ def manage_subjects():
 
         return redirect(url_for('manage_subjects'))
 
-    return render_template('manage_subjects.html', classes=classes, class_subjects=class_subjects)
+    return render_template('manage_subjects.html', classes=classes, class_subjects=class_subjects, form=form)
 
 
 # Route to remove subjects
 # =========================
 @app.route('/remove_subject/<int:mapping_id>', methods=['POST'])
 def remove_subject(mapping_id):
-    subject_entry = ClassSubject.query.get(mapping_id)
-    if subject_entry:
-        db.session.delete(subject_entry)
-        db.session.commit()
+    subject_entry = ClassSubject.query.get_or_404(mapping_id)
+    db.session.delete(subject_entry)
+    db.session.commit()
+    flash("Subject removed successfully!", "success")
     return redirect(url_for('manage_subjects'))
 
 
@@ -477,21 +487,33 @@ def enter_scores(student_id):
     student = Student.query.get_or_404(student_id)
     subjects = [cs.subject for cs in ClassSubject.query.filter(func.lower(ClassSubject.student_class) == func.lower(student.student_class)).all()]
     
-    if request.method == 'POST':
-        total_score = 0  # Keep track of the total score
-        max_score = len(subjects) * 100  # Maximum possible score
-        teacher_comment = request.form.get('teacher_comment', '').strip()  # Get teacher's comment
+    # Create form instance
+    form = EnterScoresForm()
+
+    # Dynamically add subject fields
+    for subject in subjects:
+        setattr(EnterScoresForm, f"{subject}_first_test", IntegerField("1st Test", validators=[NumberRange(0, 20)]))
+        setattr(EnterScoresForm, f"{subject}_second_test", IntegerField("2nd Test", validators=[NumberRange(0, 20)]))
+        setattr(EnterScoresForm, f"{subject}_class_assessment", IntegerField("Class Assessment", validators=[NumberRange(0, 5)]))
+        setattr(EnterScoresForm, f"{subject}_home_assessment", IntegerField("Home Assessment", validators=[NumberRange(0, 5)]))
+        setattr(EnterScoresForm, f"{subject}_exam", IntegerField("Exam", validators=[NumberRange(0, 50)]))
+
+    # If form is submitted
+    if form.validate_on_submit():
+        total_score = 0
+        max_score = len(subjects) * 100
+        teacher_comment = form.teacher_comment.data.strip()
 
         for subject in subjects:
-            first_test = int(request.form.get(f'{subject}_first_test', 0) or 0)
-            second_test = int(request.form.get(f'{subject}_second_test', 0) or 0)
-            class_assessment = int(request.form.get(f'{subject}_class_assessment', 0) or 0)
-            home_assessment = int(request.form.get(f'{subject}_home_assessment', 0) or 0)
-            exam = int(request.form.get(f'{subject}_exam', 0) or 0)
+            first_test = getattr(form, f"{subject}_first_test").data or 0
+            second_test = getattr(form, f"{subject}_second_test").data or 0
+            class_assessment = getattr(form, f"{subject}_class_assessment").data or 0
+            home_assessment = getattr(form, f"{subject}_home_assessment").data or 0
+            exam = getattr(form, f"{subject}_exam").data or 0
 
             total_subject_score = first_test + second_test + class_assessment + home_assessment + exam
-            total_score += total_subject_score  # Add to grand total
-            
+            total_score += total_subject_score
+
             score = Score.query.filter_by(student_id=student_id, subject=subject).first()
             if not score:
                 score = Score(student_id=student_id, subject=subject)
@@ -502,30 +524,33 @@ def enter_scores(student_id):
             score.class_assessment = class_assessment
             score.home_assessment = home_assessment
             score.exam = exam
+            score.teacher_comment = teacher_comment
 
-            # Store teacher's comment for each subject
-            score.teacher_comment = teacher_comment  
-
-        # Calculate percentage and store admin comment
         percentage = (total_score / max_score) * 100 if max_score > 0 else 0
         admin_comment = get_admin_comment(percentage)
 
-        # Save admin comment for all subjects
         for score in Score.query.filter_by(student_id=student_id).all():
             score.admin_comment = admin_comment
 
         db.session.commit()
 
-        # Redirect based on which button was clicked
-        action = request.form.get("action")
-        if action == "view_report":
+        if form.submit_view.data:
             return redirect(url_for('view_report', student_id=student_id))
         else:
             flash("Scores saved successfully!", "success")
             return redirect(url_for('enter_scores', student_id=student_id))
 
+    # Load existing scores into the form
     scores = {score.subject: score for score in Score.query.filter_by(student_id=student_id).all()}
-    return render_template('enter_scores.html', student=student, subjects=subjects, scores=scores)
+    for subject in subjects:
+        if subject in scores:
+            getattr(form, f"{subject}_first_test").data = scores[subject].first_test
+            getattr(form, f"{subject}_second_test").data = scores[subject].second_test
+            getattr(form, f"{subject}_class_assessment").data = scores[subject].class_assessment
+            getattr(form, f"{subject}_home_assessment").data = scores[subject].home_assessment
+            getattr(form, f"{subject}_exam").data = scores[subject].exam
+
+    return render_template('enter_scores.html', student=student, subjects=subjects, form=form)
 
 
 # Route to view report card

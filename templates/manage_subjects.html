@@ -95,17 +95,14 @@
     <div class="container">
         <h2>Manage Subjects for Each Class</h2>
         <form method="POST">
-            <label for="class_name">Select Class:</label>
-            <select name="class_name" id="class_name" required>
-                {% for class in classes %}
-                    <option value="{{ class }}">{{ class }}</option>
-                {% endfor %}
-            </select>
+            {{ form.hidden_tag() }}
+            <label for="class_name">{{ form.class_name.label }}</label>
+            {{ form.class_name() }}
 
-            <label for="subject">Enter Subject:</label>
-            <input type="text" name="subject" id="subject" required>
+            <label for="subject">{{ form.subject.label }}</label>
+            {{ form.subject() }}
 
-            <button type="submit">Add Subject</button>
+            {{ form.submit() }}
         </form>
 
         <h3>Existing Class-Subject Mappings</h3>
@@ -123,6 +120,8 @@
                         <td>{{ subject_entry.subject }}</td>
                         <td>
                             <form method="POST" action="{{ url_for('remove_subject', mapping_id=subject_entry.id) }}">
+                                {{ form.hidden_tag() }}
+                                <input type="hidden" name="mapping_id" value="{{ subject_entry.id }}">
                                 <button type="submit" class="remove-btn">Remove</button>
                             </form>
                         </td>

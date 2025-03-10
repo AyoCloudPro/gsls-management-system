@@ -105,6 +105,7 @@
 
     <!-- Add Admin Form -->
     <form method="POST" action="{{ url_for('manage_admins') }}">
+        {{ form.hidden_tag() }}
         <label for="username">Username:</label>
         <input type="text" name="username" placeholder="Enter username" required>
         

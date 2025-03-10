@@ -1,31 +1,34 @@
-# Use the official Python image from Docker Hub
-FROM python:3.9-slim
+# Use full Python image for building
+FROM python:3.9 AS builder
 
-# Set the working directory
 WORKDIR /app
 
-# Install system dependencies first (before copying app files)
+# Install system dependencies
 RUN apt-get update && apt-get install -y wkhtmltopdf
 
-# Install Gunicorn globally before copying app files
-RUN pip install --no-cache-dir gunicorn
-
-# Copy and install Python dependencies
+# Install dependencies in a virtual environment
+RUN python -m venv /opt/venv
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application files
+# Use a lightweight final image
+FROM python:3.9-slim
+
+WORKDIR /app
+
+# Copy only necessary files from the builder stage
+COPY --from=builder /opt/venv /opt/venv
 COPY . .
 
-# Copy and set permissions for the entrypoint script
+# Copy and set permissions for entrypoint script
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# Expose the port the app runs on
+# Set environment variables
+ENV WKHTMLTOPDF_PATH=/usr/bin/wkhtmltopdf
+ENV PATH="/opt/venv/bin:$PATH"
+
 EXPOSE 8080
 
-# Set environment variable for pdfkit
-ENV WKHTMLTOPDF_PATH /usr/bin/wkhtmltopdf
-
-# Command to run the application
+# Run Gunicorn with multiple workers
 CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8080", "app:app"]
