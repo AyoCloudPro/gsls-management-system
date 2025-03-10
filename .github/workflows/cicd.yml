@@ -90,29 +90,29 @@ jobs:
 
           # Start MySQL if it's not running
           if ! docker ps | grep -q mysql-container; then
-            echo "Starting MySQL container..."
-            docker run -d --name mysql-container \
-              -e MYSQL_ROOT_PASSWORD="$MYSQL_ROOT_PASSWORD" \  
-              -e MYSQL_USER="$MYSQL_USER" \
-              -e MYSQL_PASSWORD="$MYSQL_PASSWORD" \
-              -e MYSQL_DATABASE="$MYSQL_DATABASE" \
-              -p 3306:3306 \
-              mysql
-          else
-            echo "MySQL is already running."
-          fi
-
-          # Stop and remove old Flask app container
-          docker stop app || true
-          docker rm app || true
-
-          # Run the Flask app with the correct environment variables
-          docker run -d --name app \
-            --link mysql-container:mysql \
-            -e SECRET_KEY="$SECRET_KEY" \
-            -e ADMIN_PASSWORD="$ADMIN_PASSWORD" \  
-            -e DATABASE_URL="mysql+pymysql://$MYSQL_USER:$MYSQL_PASSWORD@mysql:3306/$MYSQL_DATABASE" \
-            -p 8080:8080 ${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest
+             echo "Starting MySQL container..."
+             docker run -d --name mysql-container \
+               -e MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD}" \  
+               -e MYSQL_USER="${MYSQL_USER}" \
+               -e MYSQL_PASSWORD="${MYSQL_PASSWORD}" \
+               -e MYSQL_DATABASE="${MYSQL_DATABASE}" \
+               -p 3306:3306 \
+               mysql
+           else
+             echo "MySQL is already running."
+           fi
+ 
+           # Stop and remove old Flask app container
+           docker stop app || true
+           docker rm app || true
+ 
+           # Run the Flask app with the correct environment variables
+           docker run -d --name app \
+             --link mysql-container:mysql \
+             -e SECRET_KEY="${SECRET_KEY}" \
+             -e ADMIN_PASSWORD="${ADMIN_PASSWORD}" \  
+             -e DATABASE_URL="mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}" \
+             -p 8080:8080 "${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest"
         EOF
     
     - name: Ensure Nginx is Installed and Restart It (If Needed)
