@@ -26,7 +26,11 @@ load_dotenv()
 WKHTMLTOPDF_PATH = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
 
 # Ensure Flask uses this path
-config = pdfkit.configuration(wkhtmltopdf=WKHTMLTOPDF_PATH)
+# For local testing
+# config = pdfkit.configuration(wkhtmltopdf=WKHTMLTOPDF_PATH) 
+#  ----------------------
+# For production
+config = pdfkit.configuration(wkhtmltopdf='/usr/bin/wkhtmltopdf')
 
 # Example usage
 pdfkit.from_string("Hello, Flask!", "flask_test.pdf", configuration=config)
