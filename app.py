@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, send_file, session, flash
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func
-import pdfkit
+# import pdfkit
 import subprocess
 import time
 from flask import send_from_directory
@@ -23,17 +23,17 @@ import os
 load_dotenv()
 
 # Manually set the path to wkhtmltopdf
-WKHTMLTOPDF_PATH = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
+# WKHTMLTOPDF_PATH = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
 
 # Ensure Flask uses this path
 # For local testing
 # config = pdfkit.configuration(wkhtmltopdf=WKHTMLTOPDF_PATH) 
 #  ----------------------
 # For production
-config = pdfkit.configuration(wkhtmltopdf='/usr/bin/wkhtmltopdf')
+# config = pdfkit.configuration(wkhtmltopdf='/usr/bin/wkhtmltopdf')
 
 # Example usage
-pdfkit.from_string("Hello, Flask!", "flask_test.pdf", configuration=config)
+# pdfkit.from_string("Hello, Flask!", "flask_test.pdf", configuration=config)
 
 
 admin_password = os.getenv("admin_password")
@@ -578,69 +578,69 @@ def view_report(student_id):
 
 # Route to download report card
 # ===================================
-@app.route('/download_report/<path:reg_num>')
-@login_required
-def download_report(reg_num):
-    print(f"Received reg_num: {reg_num}")
+# @app.route('/download_report/<path:reg_num>')
+# @login_required
+# def download_report(reg_num):
+#     print(f"Received reg_num: {reg_num}")
 
-    student = Student.query.filter_by(reg_num=reg_num).first()
-    if not student:
-        print("Student not found!")
-        return "Student not found", 404
+#     student = Student.query.filter_by(reg_num=reg_num).first()
+#     if not student:
+#         print("Student not found!")
+#         return "Student not found", 404
 
-    scores = Score.query.filter_by(student_id=student.id).all()
-    grand_total = sum(score.total_score for score in scores)
-    percentage = (grand_total / (15 * 100)) * 100
+#     scores = Score.query.filter_by(student_id=student.id).all()
+#     grand_total = sum(score.total_score for score in scores)
+#     percentage = (grand_total / (15 * 100)) * 100
 
-    rendered = render_template(
-        'report.html',
-        student=student,
-        scores=scores,
-        grand_total=grand_total,
-        percentage=percentage
-    )
+#     rendered = render_template(
+#         'report.html',
+#         student=student,
+#         scores=scores,
+#         grand_total=grand_total,
+#         percentage=percentage
+#     )
 
-    print(rendered)
+#     print(rendered)
 
-    #  Ensure folder exists
-    pdf_folder = "generated_pdfs"
-    if not os.path.exists(pdf_folder):
-        os.makedirs(pdf_folder)
+#     #  Ensure folder exists
+#     pdf_folder = "generated_pdfs"
+#     if not os.path.exists(pdf_folder):
+#         os.makedirs(pdf_folder)
 
-    # 100% Safe Filename: Replace EVERYTHING bad
-    safe_reg_num = re.sub(r'[^a-zA-Z0-9_-]', '-', reg_num)  # Only allow letters, numbers, _ and -
+#     # 100% Safe Filename: Replace EVERYTHING bad
+#     safe_reg_num = re.sub(r'[^a-zA-Z0-9_-]', '-', reg_num)  # Only allow letters, numbers, _ and -
 
-    #Print new filename for debugging
-    print(f"Safe filename: {safe_reg_num}")
+#     #Print new filename for debugging
+#     print(f"Safe filename: {safe_reg_num}")
 
-    # Now use the "safe" registration number for file names
-    html_path = os.path.join(pdf_folder, f"report_{safe_reg_num}.html")
-    pdf_path = os.path.join(pdf_folder, f"report_{safe_reg_num}.pdf")
+#     # Now use the "safe" registration number for file names
+#     html_path = os.path.join(pdf_folder, f"report_{safe_reg_num}.html")
+#     pdf_path = os.path.join(pdf_folder, f"report_{safe_reg_num}.pdf")
 
-    print(f"Saving HTML file to: {html_path}")  # Debug print
+#     print(f"Saving HTML file to: {html_path}")  # Debug print
 
-    # Save the HTML to a file
-    with open(html_path, "w", encoding="utf-8") as f:
-        f.write(rendered)
+#     # Save the HTML to a file
+#     with open(html_path, "w", encoding="utf-8") as f:
+#         f.write(rendered)
 
-    options = {
-        'enable-local-file-access': '',
-        'disable-smart-shrinking': '',
-        'load-error-handling': 'ignore'
-    }
+#     options = {
+#         'enable-local-file-access': '',
+#         'disable-smart-shrinking': '',
+#         'load-error-handling': 'ignore'
+#     }
 
-    # Print command before running pdfkit
-    print(f"Running wkhtmltopdf to generate: {html_path}")
+#     # Print command before running pdfkit
+#     print(f"Running wkhtmltopdf to generate: {html_path}")
 
-    try:
-        # Convert the saved HTML file to a PDF
-        pdfkit.from_file(html_path, pdf_path, configuration=config, options=options)
-        print(f"PDF successfully generated: {pdf_path}")
-    except Exception as e:
-        print(f"PDF generation failed: {e}")  # Print error
-        return f"PDF generation failed: {e}", 500
+#     try:
+#         # Convert the saved HTML file to a PDF
+#         pdfkit.from_file(html_path, pdf_path, configuration=config, options=options)
+#         print(f"PDF successfully generated: {pdf_path}")
+#     except Exception as e:
+#         print(f"PDF generation failed: {e}")  # Print error
+#         return f"PDF generation failed: {e}", 500
 
-    return send_file(pdf_path, as_attachment=True)
+#     return send_file(pdf_path, as_attachment=True)
 
 
 # Route to images

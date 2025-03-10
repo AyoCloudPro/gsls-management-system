@@ -80,9 +80,8 @@ jobs:
         MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
         MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
         SECRET_KEY: ${{ secrets.SECRET_KEY }}
-        WKHTMLTOPDF_PATH: ${{ secrets.WKHTMLTOPDF_PATH }}
       run: |
-        ssh -o SendEnv=MYSQL_USER -o SendEnv=MYSQL_PASSWORD -o SendEnv=MYSQL_DATABASE -o SendEnv=SECRET_KEY -o SendEnv=WKHTMLTOPDF_PATH \
+        ssh -o SendEnv=MYSQL_USER -o SendEnv=MYSQL_PASSWORD -o SendEnv=MYSQL_DATABASE -o SendEnv=SECRET_KEY \
         ay@${{ secrets.SERVER_IP }} << 'EOF'
           # Pull the latest Docker image
           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest
@@ -103,15 +102,14 @@ jobs:
           docker stop app || true
           docker rm app || true
 
-          # Run the Flask app
+          # Run the Flask app (without WKHTMLTOPDF_PATH)
           docker run -d --name app \
             --link mysql-container:mysql \
             -e SECRET_KEY="$SECRET_KEY" \
             -e DATABASE_URL="mysql+pymysql://$MYSQL_USER:$MYSQL_PASSWORD@mysql:3306/$MYSQL_DATABASE" \
-            -e WKHTMLTOPDF_PATH="$WKHTMLTOPDF_PATH" \
             -p 8080:8080 ${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest
         EOF
-
+    
     - name: Ensure Nginx is Installed and Restart It (If Needed)
       run: |
         ssh -i ~/.ssh/id_rsa ay@${{ secrets.SERVER_IP }} "
