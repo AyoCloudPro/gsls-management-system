@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  build:
+  BuildandPush:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,14 +24,6 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-buildx-
 
-    - name: Cache Docker layers
-      uses: actions/cache@v3
-      with:
-        path: /tmp/.buildx-cache
-        key: ${{ runner.os }}-docker-${{ github.sha }}
-        restore-keys: |
-          ${{ runner.os }}-docker-
-
     - name: Log in to Docker Hub
       uses: docker/login-action@v1
       with:
@@ -47,105 +39,68 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-    needs: build
+    needs: BuildandPush
 
     steps:
     - name: Set up SSH Access
-      env:
-        PRIVATE_SSH_KEY: ${{ secrets.PRIVATE_SSH_KEY }}
       run: |
         mkdir -p ~/.ssh
-        echo "$PRIVATE_SSH_KEY" > ~/.ssh/id_rsa
+        echo "${{ secrets.PRIVATE_SSH_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
-        eval "$(ssh-agent -s)"  
-        ssh-add ~/.ssh/id_rsa  
-        ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+        eval "$(ssh-agent -s)"
+        ssh-add ~/.ssh/id_rsa
 
-    - name: Ensure Docker is Installed
+    - name: Deploy Application with Docker Compose
       run: |
-        ssh -i ~/.ssh/id_rsa ay@${{ secrets.SERVER_IP }} '
+        ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+          # Ensure directory exists
+          if [ ! -d "/home/${{ secrets.SSH_USER }}/app" ]; then
+            git clone https://github.com/${{ github.repository }} /home/${{ secrets.SSH_USER }}/app
+          fi
+
+          cd /home/${{ secrets.SSH_USER }}/app
+          git pull origin main
+
+          # Ensure Docker is installed
           if ! command -v docker &> /dev/null; then
-            echo "Docker not found. Installing..."
-            sudo apt update
-            sudo apt install -y docker.io
-            sudo systemctl enable --now docker
-          else
-            echo "Docker is already installed."
+              echo "Installing Docker..."
+              sudo apt update
+              sudo apt install -y docker.io
           fi
-        '
-    - name: Debug Secrets
-      run: |
-        echo "MYSQL_USER=${{ secrets.MYSQL_USER }}"
-        echo "MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}" | sed 's/./& /g'  # Obfuscate password
-        echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}" | sed 's/./& /g'
-        echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" | sed 's/./& /g'
 
-    - name: Deploy to Server
-      env:
-        MYSQL_USER: ${{ secrets.MYSQL_USER }}
-        MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
-        MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
-        MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
-        SECRET_KEY: ${{ secrets.SECRET_KEY }}
-        ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
-      run: |
-        ssh -o SendEnv=MYSQL_USER -o SendEnv=MYSQL_PASSWORD -o SendEnv=MYSQL_DATABASE -o SendEnv=MYSQL_ROOT_PASSWORD -o SendEnv=SECRET_KEY -o SendEnv=ADMIN_PASSWORD \
-        ay@${{ secrets.SERVER_IP }} << 'EOF'
+          # Ensure Docker Compose is installed
+          if ! command -v docker-compose &> /dev/null; then
+              echo "Installing Docker Compose..."
+              sudo apt install -y docker-compose
+          fi
 
-          export MYSQL_USER=$MYSQL_USER
-          export MYSQL_PASSWORD=$MYSQL_PASSWORD
-          export MYSQL_DATABASE=$MYSQL_DATABASE
-          export MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD
-          export SECRET_KEY=$SECRET_KEY
-          export ADMIN_PASSWORD=$ADMIN_PASSWORD
+          # Stop and remove existing containers
+          docker-compose down
 
-          # Pull the latest Docker image
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest
+          # Pull latest images
+          docker-compose pull
 
-          # Start MySQL if it's not running
-          if ! docker ps | grep -q mysql-container; then
-             echo "Starting MySQL container..."
-             docker run -d --name mysql-container \
-               -e MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD}" \  
-               -e MYSQL_USER="${MYSQL_USER}" \
-               -e MYSQL_PASSWORD="${MYSQL_PASSWORD}" \
-               -e MYSQL_DATABASE="${MYSQL_DATABASE}" \
-               -p 3306:3306 \
-               mysql
-           else
-             echo "MySQL is already running."
-           fi
- 
-           # Stop and remove old Flask app container
-           docker stop app || true
-           docker rm app || true
- 
-           # Run the Flask app with the correct environment variables
-           docker run -d --name app \
-             --link mysql-container:mysql \
-             -e SECRET_KEY="${SECRET_KEY}" \
-             -e ADMIN_PASSWORD="${ADMIN_PASSWORD}" \  
-             -e DATABASE_URL="mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}" \
-             -p 8080:8080 "${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest"
+          # Start new containers
+          docker-compose up -d
         EOF
-    
-    - name: Ensure Nginx is Installed and Restart It (If Needed)
-      run: |
-        ssh -i ~/.ssh/id_rsa ay@${{ secrets.SERVER_IP }} "
-          if ! command -v nginx &> /dev/null; then
-            sudo apt update && sudo apt install -y nginx
-          fi
-          sudo systemctl is-active --quiet nginx || sudo systemctl restart nginx
-        "
 
-    - name: Install Certbot and Obtain SSL Certificate
+    - name: Run Certbot to Obtain/Renew SSL Certificate
       run: |
-        ssh -i ~/.ssh/id_rsa ay@${{ secrets.SERVER_IP }} "
-          sudo apt-get update &&
-          sudo apt-get install -y certbot python3-certbot-nginx &&
-          sudo certbot renew --quiet || sudo certbot --nginx -d gslsportal.com -d www.gslsportal.com --non-interactive --agree-tos --email your@email.com
-        "
+        ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+          # Ensure Certbot volumes exist
+          docker volume create certbot-etc || true
+          docker volume create certbot-var || true
 
-    - name: Reload Nginx to Apply SSL Certificate
-      run: |
-        ssh -i ~/.ssh/id_rsa ay@${{ secrets.SERVER_IP }} "sudo systemctl reload nginx"
+          docker run --rm -it \
+            -v certbot-etc:/etc/letsencrypt \
+            -v certbot-var:/var/lib/letsencrypt \
+            certbot/certbot certonly --webroot \
+            -w /var/www/certbot \
+            -d gslsportal.com \
+            --email ayomideolalere374@gmail.com \
+            --agree-tos \
+            --no-eff-email || echo "Certbot SSL renewal skipped (already valid)"
+
+          # Restart Nginx to apply SSL certificate
+          docker-compose restart nginx
+        EOF

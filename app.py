@@ -36,20 +36,14 @@ load_dotenv()
 # pdfkit.from_string("Hello, Flask!", "flask_test.pdf", configuration=config)
 
 
-admin_password = os.getenv("admin_password")
-hashed_password = generate_password_hash(admin_password)
-print("Hashed Password:", hashed_password)
-
 # Get values from environment variables
 # =======================================
-db_user = os.getenv("MYSQL_USER")
-db_password = os.getenv("MYSQL_PASSWORD")
-db_host = os.getenv("MYSQL_HOST")
-db_port = os.getenv("MYSQL_PORT")
-db_name = os.getenv("MYSQL_DATABASE")
+DATABASE_URL = os.getenv("DATABASE_URL")
+SECRET_KEY = os.getenv("SECRET_KEY")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
 
-SQLALCHEMY_DATABASE_URI = f"mysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
-
+hashed_password = generate_password_hash(ADMIN_PASSWORD)
+print("Hashed Password:", hashed_password)
 
 
 # App config
@@ -61,7 +55,7 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = os.getenv('SECRET_KEY', 'my-super-secret-key')
-app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("SQLALCHEMY_DATABASE_URI")
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
@@ -118,7 +112,7 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(50), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
     VALID_ROLES = ['main_admin', 'school_admin', 'teacher']
-    role = db.Column(db.String(50), nullable=False)  # True = Developer, False = School Admin
+    role = db.Column(db.String(50), nullable=False)  
 
     def __init__(self, username, password, role):
         if role not in self.VALID_ROLES:
@@ -142,8 +136,8 @@ class User(db.Model, UserMixin):
 # ==========================
 class ClassSubject(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    student_class = db.Column(db.String(50), nullable=False)  # Example: "JSS1", "SS2"
-    subject = db.Column(db.String(100), nullable=False)  # Example: "Physics", "Chemistry"
+    student_class = db.Column(db.String(50), nullable=False)  
+    subject = db.Column(db.String(100), nullable=False)  
 
 
 # TO calulate percentage
@@ -193,7 +187,7 @@ def role_required(*required_roles):
 # ===========================
 def generate_csrf_token():
     if '_csrf_token' not in session:
-        session['_csrf_token'] = os.urandom(24).hex()  # Generates a new CSRF token
+        session['_csrf_token'] = os.urandom(24).hex()  
     return session['_csrf_token']
 
 app.jinja_env.globals['csrf_token'] = generate_csrf_token  # Makes the token available in all templates
@@ -223,11 +217,11 @@ def login():
 
         login_user(user)
         session['user_id'] = user.id
-        session['role'] = user.role  # Store role in session
+        session['role'] = user.role  
 
         return redirect(url_for('dashboard'))
 
-    return render_template('login.html', form=form)  # Pass `form` to template
+    return render_template('login.html', form=form)  
 
 
 # Logout Route
@@ -254,7 +248,7 @@ def dashboard():
 
     return render_template(
         'dashboard.html',
-        role=session['role'],  # Use session role instead of current_user.role
+        role=session['role'],  
         total_students=total_students,
         total_subjects=total_subjects,
         total_admins=total_admins,
@@ -300,7 +294,7 @@ def manage_admins():
         return redirect(url_for('manage_admins'))
 
     admins = User.query.all()
-    return render_template('manage_admins.html', admins=admins, form=form)  # Pass `form` to the template
+    return render_template('manage_admins.html', admins=admins, form=form)  
 
 
 # Route to delete an admin (except the main admin themselves)
@@ -358,7 +352,7 @@ def manage_teachers():
 # =======================================
 @app.route('/delete_teacher/<int:teacher_id>', methods=['POST'])
 @login_required
-@role_required("main_admin", "school_admin")  # Only main admins can delete teachers
+@role_required("main_admin", "school_admin") 
 def delete_teacher(teacher_id):
     teacher = User.query.get_or_404(teacher_id)
 
@@ -375,7 +369,7 @@ def delete_teacher(teacher_id):
 @login_required
 def index():
     if not current_user.is_authenticated:
-        return redirect(url_for('login'))  # Ensure guests go to login first
+        return redirect(url_for('login'))  
     students = Student.query.all()
     return render_template('index.html', students=students)
 
@@ -654,4 +648,3 @@ def static_files(filename):
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()  # Ensure tables exist before running
-    app.run(host="0.0.0.0", port=8080, debug=True)
