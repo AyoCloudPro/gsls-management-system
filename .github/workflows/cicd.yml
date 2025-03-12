@@ -91,6 +91,14 @@ jobs:
       run: |
         ssh -o SendEnv=MYSQL_USER -o SendEnv=MYSQL_PASSWORD -o SendEnv=MYSQL_DATABASE -o SendEnv=MYSQL_ROOT_PASSWORD -o SendEnv=SECRET_KEY -o SendEnv=ADMIN_PASSWORD \
         ay@${{ secrets.SERVER_IP }} << 'EOF'
+
+          export MYSQL_USER=$MYSQL_USER
+          export MYSQL_PASSWORD=$MYSQL_PASSWORD
+          export MYSQL_DATABASE=$MYSQL_DATABASE
+          export MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD
+          export SECRET_KEY=$SECRET_KEY
+          export ADMIN_PASSWORD=$ADMIN_PASSWORD
+
           # Pull the latest Docker image
           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest
 
