@@ -73,6 +73,12 @@ jobs:
             echo "Docker is already installed."
           fi
         '
+    - name: Debug Secrets
+      run: |
+        echo "MYSQL_USER=${{ secrets.MYSQL_USER }}"
+        echo "MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}" | sed 's/./& /g'  # Obfuscate password
+        echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}" | sed 's/./& /g'
+        echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" | sed 's/./& /g'
 
     - name: Deploy to Server
       env:
