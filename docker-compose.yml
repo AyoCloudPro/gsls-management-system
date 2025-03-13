@@ -7,6 +7,8 @@ services:
     restart: always
     ports:
       - "5000:5000"
+    env_file:
+      - .env
     environment:
       - DATABASE_URL=mysql://root:${MYSQL_ROOT_PASSWORD}@mysql/mydatabase  
     depends_on:
