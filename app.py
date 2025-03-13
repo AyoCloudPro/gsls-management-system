@@ -16,7 +16,8 @@ from forms import DeleteAdminForm, AddTeacherForm, LoginForm, StudentForm, EditS
 from flask_migrate import Migrate
 
 import os
-
+import pymysql
+pymysql.install_as_MySQLdb()
 
 # Load .env file
 # ====================
