@@ -90,10 +90,6 @@ jobs:
           docker-compose up -d
         EOF
 
-    - name: Navigate to the deployment directory
-      working-directory: /home/ay/app 
-      run: ls -l
-
     - name: Run Certbot to Obtain/Renew SSL Certificate
       run: |
         ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
@@ -112,8 +108,7 @@ jobs:
             --no-eff-email || echo "Certbot SSL renewal skipped (already valid)"
 
           # Restart Nginx to apply SSL certificate
+          cd /home/ay/app
           docker-compose restart nginx
         EOF
 
-
-    
