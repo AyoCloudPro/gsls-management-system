@@ -45,6 +45,7 @@ services:
       - certbot-var:/var/lib/letsencrypt
     depends_on:
       - flask-app
+      - certbot
 
 volumes:
   mysql_data:
