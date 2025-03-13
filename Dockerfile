@@ -10,7 +10,7 @@ RUN pip install --no-cache-dir -r /tmp/requirements.txt
 # Set the working directory inside the container
 WORKDIR /app
 
-# Copy the rest of the application files
+# Copies the rest of the application files
 COPY . .
 
 # Expose the port Flask will run on
