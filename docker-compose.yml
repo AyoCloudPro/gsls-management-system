@@ -8,17 +8,17 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - DATABASE_URL=mysql://root:${MYSQL_ROOT_PASSWORD}@mysql/mydatabase  # Use correct syntax
+      - DATABASE_URL=mysql://root:${MYSQL_ROOT_PASSWORD}@mysql/mydatabase  
     depends_on:
       mysql:
-        condition: service_healthy  # Wait until MySQL is fully ready
+        condition: service_healthy  
 
   mysql:
     image: mysql:8
     container_name: mysql
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}  # Correct syntax
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}  
       MYSQL_DATABASE: mydatabase
     volumes:
       - mysql_data:/var/lib/mysql
