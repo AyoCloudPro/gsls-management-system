@@ -42,6 +42,10 @@ jobs:
     needs: BuildandPush
 
     steps:
+    - name: Navigate to the deployment directory
+      working-directory: /home/ay/app 
+      run: ls -l
+
     - name: Stop and Remove Existing Containers
       run: |
         docker-compose down || true
