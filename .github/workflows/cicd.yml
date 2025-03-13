@@ -42,6 +42,12 @@ jobs:
     needs: BuildandPush
 
     steps:
+    - name: Stop and Remove Existing Containers
+      run: |
+        docker-compose down || true
+        docker rm -f $(docker ps -aq) || true
+        docker volume rm $(docker volume ls -q) || true
+
     - name: Set up SSH Access
       run: |
         mkdir -p ~/.ssh
