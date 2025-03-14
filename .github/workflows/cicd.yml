@@ -87,7 +87,7 @@ jobs:
           docker compose pull
 
           # Start new containers
-          docker-compose -f /home/${{ secrets.SSH_USER }}/app/docker-compose.yml up -d
+          docker compose -f /home/${{ secrets.SSH_USER }}/app/docker-compose.yml up -d
         EOF
 
     - name: Run Certbot to Obtain/Renew SSL Certificate
