@@ -44,7 +44,7 @@ jobs:
     steps:
     - name: Stop and Remove Existing Containers
       run: |
-        docker-compose down || true
+        docker compose down || true
         docker rm -f $(docker ps -aq) || true
         docker volume rm $(docker volume ls -q) || true
 
@@ -77,7 +77,7 @@ jobs:
           # Ensure Docker Compose is installed
           if ! docker compose version &> /dev/null; then
               echo "Installing Docker Compose..."
-              sudo apt install -y docker-compose-plugin
+              sudo apt install -y docker compose-plugin
           fi
 
           # Stop and remove existing containers
@@ -87,7 +87,7 @@ jobs:
           docker compose pull
 
           # Start new containers
-          docker compose up -d
+          docker-compose -f /home/${{ secrets.SSH_USER }}/app/docker-compose.yml up -d
         EOF
 
     - name: Run Certbot to Obtain/Renew SSL Certificate
