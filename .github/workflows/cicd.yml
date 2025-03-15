@@ -104,6 +104,6 @@ jobs:
             docker compose run --rm certbot certonly --webroot --webroot-path=/var/www/certbot --email your-email@example.com --agree-tos --no-eff-email --force-renewal -d gslsportal.com
           fi
 
-          # Reload Nginx to apply SSL without downtime
+          # Reloading Nginx to apply SSL without downtime
           docker compose exec nginx nginx -s reload
         EOF
