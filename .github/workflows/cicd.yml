@@ -38,6 +38,14 @@ jobs:
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest
         file: Dockerfile
 
+    - name: Remove old Nginx container & image (if exists)
+      run: |
+        docker stop nginx || true
+        docker rm nginx || true
+        docker rmi ayocloudpro/nginx-custom || true
+        docker system prune -a -f || true
+
+
     - name: Build and push Nginx image
       uses: docker/build-push-action@v2
       with:
