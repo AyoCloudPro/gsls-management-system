@@ -59,51 +59,30 @@ jobs:
     - name: Deploy Application with Docker Compose
       run: |
         ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+          set -e  # Exit on error
+
           # Ensure application directory exists
           if [ ! -d "/home/${{ secrets.SSH_USER }}/app" ]; then
             git clone https://github.com/${{ github.repository }} /home/${{ secrets.SSH_USER }}/app
           fi
 
           cd /home/${{ secrets.SSH_USER }}/app
+          git reset --hard  # Ensure clean state
           git pull origin main
-
-          # Ensure Docker is installed
-          if ! docker --version &> /dev/null; then
-              echo "Installing Docker..."
-              sudo apt update
-              sudo apt install -y docker.io
-          fi
-
-          # Ensure Docker Compose is installed
-          if ! docker compose version &> /dev/null; then
-              echo "Installing Docker Compose..."
-              sudo apt install -y docker compose-plugin
-          fi
 
           # Stop and remove existing containers
           docker compose down
 
+          # Remove old unused images (frees space)
+          docker image prune -af
+
           # Pull latest images
-          docker compose pull
+          docker compose pull --quiet  
 
           # Start new containers
-          docker compose -f /home/${{ secrets.SSH_USER }}/app/docker-compose.yml up -d
+          docker compose up -d --remove-orphans
+
+          # Restart Nginx to apply new changes
+          docker restart nginx || true
+
         EOF
-
-    # - name: Run Certbot to Obtain/Renew SSL Certificate
-    #   run: |
-    #     ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
-    #       # Ensure certbot webroot directory exists
-    #       mkdir -p /var/www/certbot
-
-    #       # Navigate to the directory where docker-compose.yml is located
-    #       cd /home/${{ secrets.SSH_USER }}/app
-
-    #       # Check if SSL certificate exists, otherwise request one
-    #       if [ ! -f "/etc/letsencrypt/live/gslsportal.com/fullchain.pem" ]; then
-    #         docker compose run --rm certbot certonly --webroot --webroot-path=/var/www/certbot --email your-email@example.com --agree-tos --no-eff-email --force-renewal -d gslsportal.com
-    #       fi
-
-    #       # Reload Nginx to apply SSL without downtime
-    #       docker compose exec nginx nginx -s reload
-    #     EOF
