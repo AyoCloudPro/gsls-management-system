@@ -30,12 +30,21 @@ jobs:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Build and push Docker image
+    - name: Build and push Flask app image
       uses: docker/build-push-action@v2
       with:
         context: .
         push: true
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/gsls_management_system:latest
+        file: Dockerfile
+
+    - name: Build and push Nginx image
+      uses: docker/build-push-action@v2
+      with:
+        context: .
+        push: true
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/nginx-custom:latest
+        file: Dockerfile.nginx
 
   deploy:
     runs-on: ubuntu-latest
