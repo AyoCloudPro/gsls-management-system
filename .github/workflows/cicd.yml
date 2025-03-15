@@ -45,6 +45,7 @@ jobs:
         push: true
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/nginx-custom:latest
         file: Dockerfile.nginx
+        no-cache: true
 
   deploy:
     runs-on: ubuntu-latest
